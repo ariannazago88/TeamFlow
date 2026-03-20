@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TeamFlow</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#F1EFE8;color:#1a1a1a;min-height:100vh}
+:root{--purple:#534AB7;--purple-light:#EEEDFE;--purple-dark:#3C3489;--teal:#0F6E56;--teal-light:#E1F5EE;--blue:#185FA5;--blue-light:#E6F1FB;--amber:#854F0B;--amber-light:#FAEEDA;--red:#A32D2D;--red-light:#FCEBEB;--green:#3B6D11;--green-light:#EAF3DE;--gray:#5F5E5A;--gray-light:#F1EFE8;--border:#e2e0d8;--bg:#fff;--surface:#F7F6F2}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:13px 20px;background:#fff;border-bottom:1px solid var(--border);gap:12px;position:sticky;top:0;z-index:20}
+.logo{font-size:15px;font-weight:600;color:var(--purple);letter-spacing:-.3px;display:flex;align-items:center;gap:7px}
+.logo-sq{width:22px;height:22px;background:var(--purple);border-radius:5px;display:flex;align-items:center;justify-content:center}
+.logo-sq svg{width:13px;height:13px;fill:#fff}
+.topbar-right{display:flex;align-items:center;gap:10px}
+.avatars{display:flex}
+.av{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;border:2px solid #fff;margin-left:-7px;flex-shrink:0;cursor:default}
+.av:first-child{margin-left:0}
+.av-tooltip{position:relative}
+.av-tooltip:hover::after{content:attr(data-name);position:absolute;bottom:calc(100% + 5px);left:50%;transform:translateX(-50%);background:#1a1a1a;color:#fff;font-size:11px;padding:3px 8px;border-radius:5px;white-space:nowrap;pointer-events:none}
+.btn{border:1px solid #d0cec8;background:#fff;color:#1a1a1a;padding:7px 14px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:500;display:inline-flex;align-items:center;gap:5px;font-family:inherit;transition:all .12s}
+.btn:hover{background:#f5f4f0}
+.btn-primary{background:var(--purple);color:#fff;border-color:var(--purple)}
+.btn-primary:hover{background:var(--purple-dark);border-color:var(--purple-dark)}
+.btn-sm{padding:5px 10px;font-size:11px}
+.btn-ghost{border-color:transparent;background:transparent}
+.btn-ghost:hover{background:#f0efe9}
+.btn-danger{color:var(--red);border-color:#f09595;background:#fff}
+.btn-danger:hover{background:var(--red-light)}
+.config-bar{background:var(--purple-light);border-bottom:1px solid #c4c0f0;padding:10px 20px;display:flex;align-items:center;gap:8px;font-size:13px;color:var(--purple-dark)}
+.config-bar input{flex:1;max-width:320px;padding:6px 10px;border:1px solid #b0aae8;border-radius:6px;font-size:12px;font-family:inherit;background:#fff;color:#1a1a1a}
+.dash-row{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;padding:16px 20px 0}
+.stat{background:#fff;border:1px solid var(--border);border-radius:10px;padding:12px 16px}
+.stat-label{font-size:11px;color:#888;margin-bottom:4px;text-transform:uppercase;letter-spacing:.05em;font-weight:500}
+.stat-val{font-size:24px;font-weight:600}
+.board{display:flex;gap:12px;padding:16px 20px 24px;overflow-x:auto;align-items:flex-start}
+.col{width:276px;flex-shrink:0;background:var(--surface);border-radius:12px;border:1px solid var(--border);display:flex;flex-direction:column}
+.col-head{padding:12px 14px;display:flex;align-items:center;gap:8px;flex-shrink:0}
+.col-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.col-title{font-size:13px;font-weight:600;flex:1}
+.col-count{font-size:11px;color:#888;background:#fff;border:1px solid var(--border);border-radius:100px;padding:1px 7px;font-weight:500}
+.col-body{padding:0 8px 8px;min-height:80px}
+.col-body.drag-over{background:rgba(83,74,183,.08);border-radius:8px;outline:2px dashed #AFA9EC;outline-offset:-4px}
+.card{background:#fff;border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:8px;cursor:grab;transition:border-color .15s,box-shadow .15s;position:relative;user-select:none}
+.card:hover{border-color:#b8b6c8;box-shadow:0 2px 8px rgba(0,0,0,.06)}
+.card:active{cursor:grabbing}
+.card.dragging{opacity:.4;transform:scale(.96)}
+.card.done-card .card-title{color:#888;text-decoration:line-through}
+.card-top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:8px}
+.card-title{font-size:13px;font-weight:500;line-height:1.45;flex:1}
+.card-edit{width:22px;height:22px;border-radius:4px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#bbb;font-size:15px;flex-shrink:0;transition:all .12s;border:none;background:transparent}
+.card-edit:hover{background:#f0efe9;color:#555}
+.tags{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px}
+.tag{padding:2px 8px;border-radius:100px;font-size:11px;font-weight:500}
+.tag-design{background:var(--purple-light);color:var(--purple-dark)}
+.tag-dev{background:var(--blue-light);color:var(--blue)}
+.tag-mkt{background:var(--amber-light);color:var(--amber)}
+.tag-ops{background:var(--teal-light);color:var(--teal)}
+.tag-urgent{background:var(--red-light);color:var(--red)}
+.card-footer{display:flex;align-items:center;justify-content:space-between;margin-top:8px}
+.owner-chip{display:flex;align-items:center;gap:5px;font-size:11px;color:#666}
+.mini-av{width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:600;flex-shrink:0}
+.date-chip{font-size:11px;color:#888;display:flex;align-items:center;gap:3px}
+.date-overdue{color:var(--red);font-weight:600}
+.sub-bar{margin-top:8px}
+.sub-track{height:3px;background:#ece9df;border-radius:2px;margin-bottom:4px}
+.sub-fill{height:3px;border-radius:2px;background:var(--teal);transition:width .3s}
+.sub-meta{display:flex;align-items:center;justify-content:space-between}
+.sub-label{font-size:11px;color:#aaa}
+.expand-btn{font-size:11px;color:#aaa;cursor:pointer;display:flex;align-items:center;gap:2px;background:none;border:none;font-family:inherit;padding:0}
+.expand-btn:hover{color:#666}
+.subtasks-list{margin-top:6px;border-top:1px solid #f0efe9;padding-top:6px;display:none}
+.subtasks-list.open{display:block}
+.sub-item{display:flex;align-items:center;gap:6px;padding:3px 0;font-size:12px;color:#666}
+.sub-check{width:14px;height:14px;border:1.5px solid #ccc;border-radius:3px;flex-shrink:0;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:8px;background:#fff;transition:all .12s}
+.sub-check.done{background:var(--teal);border-color:var(--teal);color:#fff}
+.sub-item.done .sub-text{text-decoration:line-through;color:#bbb}
+.add-card-btn{margin:4px 8px 8px;padding:8px;border-radius:8px;border:1px dashed #ccc;font-size:12px;color:#aaa;cursor:pointer;display:flex;align-items:center;gap:5px;transition:all .12s;background:transparent;font-family:inherit;width:calc(100% - 16px)}
+.add-card-btn:hover{background:#fff;color:#666;border-color:#aaa}
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.38);display:flex;align-items:center;justify-content:center;z-index:100}
+.modal{background:#fff;border-radius:14px;padding:26px;width:460px;max-width:95vw;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.15)}
+.modal-title{font-size:16px;font-weight:600;margin-bottom:20px}
+.form-group{margin-bottom:15px}
+.form-label{font-size:11px;color:#888;font-weight:600;margin-bottom:5px;display:block;text-transform:uppercase;letter-spacing:.05em}
+.form-input{width:100%;padding:9px 11px;border:1px solid #ddd;border-radius:8px;font-size:13px;background:#fff;color:#1a1a1a;font-family:inherit;transition:border-color .12s}
+.form-input:focus{outline:none;border-color:var(--purple)}
+.tag-picker{display:flex;flex-wrap:wrap;gap:6px}
+.tag-opt{padding:3px 10px;border-radius:100px;font-size:12px;cursor:pointer;border:2px solid transparent;font-weight:500;transition:border-color .12s,opacity .12s;opacity:.7}
+.tag-opt.sel{border-color:currentColor;opacity:1}
+.sub-input-row{display:flex;gap:6px;margin-top:8px}
+.sub-input-row input{flex:1;padding:6px 9px;border:1px solid #ddd;border-radius:6px;font-size:12px;background:#fff;color:#1a1a1a;font-family:inherit}
+.sub-input-row input:focus{outline:none;border-color:var(--purple)}
+.sub-input-row button{padding:6px 11px;border:1px solid #ddd;border-radius:6px;font-size:12px;background:#fff;color:#1a1a1a;cursor:pointer;font-family:inherit;transition:background .12s}
+.sub-input-row button:hover{background:#f5f4f0}
+.modal-sub-item{display:flex;align-items:center;gap:6px;padding:5px 0;border-bottom:1px solid #f5f4f0;font-size:13px}
+.modal-sub-item:last-child{border-bottom:none}
+.modal-sub-check{width:16px;height:16px;border:1.5px solid #ccc;border-radius:3px;flex-shrink:0;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:9px;background:#fff}
+.modal-sub-check.done{background:var(--teal);border-color:var(--teal);color:#fff}
+.modal-sub-text{flex:1}
+.modal-sub-del{width:20px;height:20px;border:none;background:none;cursor:pointer;color:#ccc;font-size:13px;display:flex;align-items:center;justify-content:center;border-radius:3px}
+.modal-sub-del:hover{background:#f5f4f0;color:#888}
+.modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:22px;padding-top:16px;border-top:1px solid #f0efe9}
+.loading{display:flex;align-items:center;justify-content:center;height:200px;color:#aaa;font-size:14px;gap:8px}
+.spinner{width:18px;height:18px;border:2px solid #ddd;border-top-color:var(--purple);border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.toast{position:fixed;bottom:20px;right:20px;background:#1a1a1a;color:#fff;padding:10px 16px;border-radius:8px;font-size:13px;z-index:200;opacity:0;transition:opacity .25s;pointer-events:none}
+.toast.show{opacity:1}
+.error-banner{background:var(--red-light);border:1px solid #f09595;color:var(--red);padding:10px 20px;font-size:13px;display:flex;align-items:center;gap:8px}
+.settings-section{padding:20px;max-width:500px}
+.settings-section h2{font-size:15px;font-weight:600;margin-bottom:16px}
+.settings-section p{font-size:13px;color:#666;margin-bottom:12px;line-height:1.6}
+.settings-section code{background:#f5f4f0;padding:2px 6px;border-radius:4px;font-size:12px;font-family:monospace}
+.settings-input-row{display:flex;gap:8px;margin-bottom:10px}
+.settings-input-row input{flex:1;padding:8px 11px;border:1px solid #ddd;border-radius:8px;font-size:13px;font-family:inherit}
+.settings-input-row input:focus{outline:none;border-color:var(--purple)}
+</style>
+</head>
+<body>
+
+<div id="root"></div>
+<div class="toast" id="toast"></div>
+
+<script>
+const COLS = [
+  {id:'todo',   title:'Da fare',   color:'#888780'},
+  {id:'doing',  title:'In corso',  color:'#185FA5'},
+  {id:'review', title:'In review', color:'#BA7517'},
+  {id:'done',   title:'Fatto',     color:'#0F6E56'},
+];
+const TAGS = [
+  {id:'design', label:'design',    cls:'tag-design'},
+  {id:'dev',    label:'dev',       cls:'tag-dev'},
+  {id:'mkt',    label:'marketing', cls:'tag-mkt'},
+  {id:'ops',    label:'ops',       cls:'tag-ops'},
+  {id:'urgent', label:'urgente',   cls:'tag-urgent'},
+];
+const DEFAULT_OWNERS = [
+  {id:'owner1', name:'Tu',    initials:'TU', color:'#534AB7', bg:'#EEEDFE'},
+  {id:'owner2', name:'Anna',  initials:'AN', color:'#185FA5', bg:'#E6F1FB'},
+  {id:'owner3', name:'Beppe', initials:'BE', color:'#0F6E56', bg:'#E1F5EE'},
+];
+
+// ── Airtable config (stored in localStorage) ──────────────────────────────
+function getCfg(){
+  try{return JSON.parse(localStorage.getItem('tf_cfg')||'{}')}catch{return{}}
+}
+function saveCfg(cfg){localStorage.setItem('tf_cfg',JSON.stringify(cfg))}
+
+// ── App state ─────────────────────────────────────────────────────────────
+let S = {
+  cards: [],
+  owners: DEFAULT_OWNERS,
+  loading: true,
+  error: null,
+  modal: null,
+  expanded: {},
+  dragging: null,
+  view: 'board', // 'board' | 'settings'
+  draft: null,
+};
+let dragSrcId = null;
+
+// ── Airtable API helpers ───────────────────────────────────────────────────
+function apiBase(){
+  const cfg=getCfg();
+  return `https://api.airtable.com/v0/${cfg.baseId}/${encodeURIComponent(cfg.tableName||'Tasks')}`;
+}
+function apiHeaders(){
+  const cfg=getCfg();
+  return {'Authorization':`Bearer ${cfg.token}`,'Content-Type':'application/json'};
+}
+function isConfigured(){
+  const cfg=getCfg();
+  return !!(cfg.token && cfg.baseId);
+}
+
+async function fetchCards(){
+  if(!isConfigured()){S.loading=false;S.view='settings';render();return}
+  S.loading=true;render();
+  try{
+    let all=[],offset=null;
+    do{
+      const url=apiBase()+(offset?`?offset=${offset}`:'');
+      const r=await fetch(url,{headers:apiHeaders()});
+      if(!r.ok){const e=await r.json();throw new Error(e.error?.message||r.statusText)}
+      const d=await r.json();
+      all=[...all,...d.records];
+      offset=d.offset||null;
+    }while(offset);
+    S.cards=all.map(rec=>({
+      id: rec.id,
+      title: rec.fields.Title||'',
+      col: rec.fields.Column||'todo',
+      owner: rec.fields.Owner||'owner1',
+      due: rec.fields.Due||'',
+      tags: rec.fields.Tags?rec.fields.Tags.split(',').filter(Boolean):[],
+      subtasks: rec.fields.Subtasks?JSON.parse(rec.fields.Subtasks):[],
+    }));
+    S.error=null;
+  }catch(e){S.error=e.message}
+  S.loading=false;render();
+}
+
+async function createCard(data){
+  const r=await fetch(apiBase(),{method:'POST',headers:apiHeaders(),body:JSON.stringify({fields:toFields(data)})});
+  if(!r.ok){const e=await r.json();throw new Error(e.error?.message||r.statusText)}
+  const d=await r.json();
+  S.cards.push({id:d.id,...data});
+  render();toast('Card creata');
+}
+
+async function updateCard(id,data){
+  const r=await fetch(`${apiBase()}/${id}`,{method:'PATCH',headers:apiHeaders(),body:JSON.stringify({fields:toFields(data)})});
+  if(!r.ok){const e=await r.json();throw new Error(e.error?.message||r.statusText)}
+  const idx=S.cards.findIndex(c=>c.id===id);
+  if(idx>=0)S.cards[idx]={...S.cards[idx],...data};
+  render();
+}
+
+async function deleteCard(id){
+  const r=await fetch(`${apiBase()}/${id}`,{method:'DELETE',headers:apiHeaders()});
+  if(!r.ok){const e=await r.json();throw new Error(e.error?.message||r.statusText)}
+  S.cards=S.cards.filter(c=>c.id!==id);
+  S.modal=null;render();toast('Card eliminata');
+}
+
+function toFields(d){
+  return{
+    Title:d.title,
+    Column:d.col,
+    Owner:d.owner,
+    Due:d.due||'',
+    Tags:d.tags.join(','),
+    Subtasks:JSON.stringify(d.subtasks),
+  }
+}
+
+// ── Helpers ────────────────────────────────────────────────────────────────
+function uid(){return 'x'+Math.random().toString(36).slice(2,9)}
+function fmt(d){if(!d)return'';const p=d.split('-');return p[2]+'/'+p[1]+'/'+p[0].slice(2)}
+function isOverdue(d){if(!d)return false;return new Date(d)<new Date(new Date().toDateString())}
+function ownerById(id){return S.owners.find(o=>o.id===id)||S.owners[0]}
+function doneRatio(subs){if(!subs||!subs.length)return null;return{d:subs.filter(s=>s.done).length,t:subs.length}}
+function toast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');setTimeout(()=>el.classList.remove('show'),2500)}
+
+// ── Render ─────────────────────────────────────────────────────────────────
+function render(){
+  document.getElementById('root').innerHTML = buildHTML();
+  bindEvents();
+}
+
+function buildHTML(){
+  const total=S.cards.length;
+  const done=S.cards.filter(c=>c.col==='done').length;
+  const overdue=S.cards.filter(c=>c.col!=='done'&&isOverdue(c.due)).length;
+  const inprog=S.cards.filter(c=>c.col==='doing').length;
+
+  return `
+  ${buildTopbar()}
+  ${!isConfigured()?buildConfigBanner():''}
+  ${S.error?`<div class="error-banner"><span>⚠</span> Errore Airtable: ${S.error} — <button class="btn btn-sm" onclick="fetchCards()" style="margin-left:8px">Riprova</button></div>`:''}
+  ${S.view==='settings'?buildSettings():buildBoard(total,done,overdue,inprog)}
+  ${S.modal?buildModal():''}
+  `;
+}
+
+function buildTopbar(){
+  return `<div class="topbar">
+    <div class="logo">
+      <div class="logo-sq"><svg viewBox="0 0 13 13"><rect x="1" y="1" width="4" height="4" rx="1"/><rect x="1" y="7" width="4" height="4" rx="1"/><rect x="7" y="1" width="4" height="4" rx="1"/><rect x="7" y="7" width="4" height="4" rx="1"/></svg></div>
+      TeamFlow
+    </div>
+    <div class="topbar-right">
+      <div class="avatars">${S.owners.map(o=>`<div class="av av-tooltip" data-name="${o.name}" style="background:${o.bg};color:${o.color}">${o.initials}</div>`).join('')}</div>
+      ${isConfigured()?`<button class="btn btn-sm" onclick="openRefresh()">↻</button>`:''}
+      <button class="btn btn-sm btn-ghost" onclick="toggleView()" title="Impostazioni">⚙</button>
+      ${S.view==='board'&&isConfigured()?`<button class="btn btn-primary btn-sm" onclick="openNew()">+ Nuova card</button>`:''}
+    </div>
+  </div>`;
+}
+
+function buildConfigBanner(){
+  return`<div class="config-bar">
+    <span>⚡ Configura Airtable per salvare i dati →</span>
+    <button class="btn btn-sm btn-primary" onclick="S.view='settings';render()">Configura ora</button>
+  </div>`;
+}
+
+function buildBoard(total,done,overdue,inprog){
+  if(S.loading)return`<div class="loading"><div class="spinner"></div> Carico da Airtable...</div>`;
+  return`
+  <div class="dash-row">
+    <div class="stat"><div class="stat-label">Totale task</div><div class="stat-val">${total}</div></div>
+    <div class="stat"><div class="stat-label">In corso</div><div class="stat-val" style="color:#185FA5">${inprog}</div></div>
+    <div class="stat"><div class="stat-label">Completate</div><div class="stat-val" style="color:#0F6E56">${done}</div></div>
+    <div class="stat"><div class="stat-label">Scadute</div><div class="stat-val" style="color:${overdue?'#A32D2D':'#1a1a1a'}">${overdue}</div></div>
+  </div>
+  <div class="board" id="board">
+    ${COLS.map(col=>{
+      const cards=S.cards.filter(c=>c.col===col.id);
+      return`<div class="col">
+        <div class="col-head">
+          <div class="col-dot" style="background:${col.color}"></div>
+          <div class="col-title">${col.title}</div>
+          <div class="col-count">${cards.length}</div>
+        </div>
+        <div class="col-body" id="col-${col.id}" data-col="${col.id}">
+          ${cards.map(c=>buildCard(c)).join('')}
+        </div>
+        <button class="add-card-btn" onclick="openNew('${col.id}')">+ aggiungi</button>
+      </div>`;
+    }).join('')}
+  </div>`;
+}
+
+function buildCard(c){
+  const o=ownerById(c.owner);
+  const ratio=doneRatio(c.subtasks);
+  const od=isOverdue(c.due)&&c.col!=='done';
+  const exp=S.expanded[c.id];
+  const pct=ratio?Math.round(ratio.d/ratio.t*100):0;
+  return`<div class="card${c.col==='done'?' done-card':''}" data-id="${c.id}" draggable="true">
+    <div class="card-top">
+      <div class="card-title">${c.title}</div>
+      <button class="card-edit" onclick="openEdit('${c.id}')">⋯</button>
+    </div>
+    ${c.tags.length?`<div class="tags">${c.tags.map(t=>{const tg=TAGS.find(x=>x.id===t);return tg?`<span class="tag ${tg.cls}">${tg.label}</span>`:''}).join('')}</div>`:''}
+    ${ratio!==null?`
+    <div class="sub-bar">
+      <div class="sub-track"><div class="sub-fill" style="width:${pct}%"></div></div>
+      <div class="sub-meta">
+        <div class="sub-label">${ratio.d}/${ratio.t} subtask</div>
+        <button class="expand-btn" onclick="toggleExp('${c.id}')">
+          <svg width="9" height="9" viewBox="0 0 9 9" style="transition:transform .2s;transform:rotate(${exp?90:0}deg)"><path d="M2.5 1.5l4 3-4 3" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          ${exp?'nascondi':'mostra'}
+        </button>
+      </div>
+      <div class="subtasks-list${exp?' open':''}">
+        ${c.subtasks.map(s=>`<div class="sub-item${s.done?' done':''}">
+          <div class="sub-check${s.done?' done':''}" data-cid="${c.id}" data-sid="${s.id}">${s.done?'✓':''}</div>
+          <span class="sub-text">${s.text}</span>
+        </div>`).join('')}
+      </div>
+    </div>`:''}
+    <div class="card-footer">
+      <div class="owner-chip">
+        <div class="mini-av" style="background:${o.bg};color:${o.color}">${o.initials}</div>
+        ${o.name}
+      </div>
+      ${c.due?`<div class="date-chip${od?' date-overdue':''}">${od?'▲ ':''} ${fmt(c.due)}</div>`:''}
+    </div>
+  </div>`;
+}
+
+function buildModal(){
+  const m=S.modal;
+  const isEdit=m.mode==='edit';
+  const d=S.draft;
+  return`<div class="modal-bg" id="modal-bg">
+    <div class="modal">
+      <div class="modal-title">${isEdit?'Modifica card':'Nuova card'}</div>
+      <div class="form-group">
+        <label class="form-label">Titolo</label>
+        <input class="form-input" id="f-title" type="text" value="${d.title}" placeholder="Nome del task...">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Colonna</label>
+        <select class="form-input" id="f-col">
+          ${COLS.map(col=>`<option value="${col.id}"${d.col===col.id?' selected':''}>${col.title}</option>`).join('')}
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Owner</label>
+        <select class="form-input" id="f-owner">
+          ${S.owners.map(o=>`<option value="${o.id}"${d.owner===o.id?' selected':''}>${o.name}</option>`).join('')}
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Scadenza</label>
+        <input class="form-input" id="f-due" type="date" value="${d.due}">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Tag</label>
+        <div class="tag-picker">
+          ${TAGS.map(t=>`<div class="tag-opt ${t.cls}${d.tags.includes(t.id)?' sel':''}" data-tag="${t.id}">${t.label}</div>`).join('')}
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Subtask</label>
+        ${d.subtasks.map(s=>`<div class="modal-sub-item">
+          <div class="modal-sub-check${s.done?' done':''}" data-sid="${s.id}">${s.done?'✓':''}</div>
+          <span class="modal-sub-text">${s.text}</span>
+          <button class="modal-sub-del" data-delsub="${s.id}">✕</button>
+        </div>`).join('')}
+        <div class="sub-input-row">
+          <input id="sub-input" type="text" placeholder="Aggiungi subtask...">
+          <button id="sub-add-btn">+</button>
+        </div>
+      </div>
+      <div class="modal-actions">
+        ${isEdit?`<button class="btn btn-danger" id="del-btn">Elimina</button>`:''}
+        <button class="btn" id="cancel-btn">Annulla</button>
+        <button class="btn btn-primary" id="save-btn">${isEdit?'Salva':'Crea card'}</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function buildSettings(){
+  const cfg=getCfg();
+  const owners=S.owners;
+  return`<div class="settings-section">
+    <h2>Configurazione Airtable</h2>
+    <p>Per salvare i dati in modo condiviso, collegati ad Airtable (gratuito). <a href="https://airtable.com" target="_blank" style="color:var(--purple)">Crea account →</a></p>
+
+    <div class="form-group" style="margin-bottom:12px">
+      <label class="form-label">Personal Access Token</label>
+      <div class="settings-input-row">
+        <input id="cfg-token" class="form-input" type="password" placeholder="patXXXXXXXX..." value="${cfg.token||''}">
+      </div>
+      <p style="font-size:11px;color:#aaa;margin-top:4px">Genera da airtable.com → Account → Personal access tokens (scope: data.records:read, data.records:write)</p>
+    </div>
+    <div class="form-group" style="margin-bottom:12px">
+      <label class="form-label">Base ID</label>
+      <div class="settings-input-row">
+        <input id="cfg-base" class="form-input" type="text" placeholder="appXXXXXXXXXXXXXX" value="${cfg.baseId||''}">
+      </div>
+      <p style="font-size:11px;color:#aaa;margin-top:4px">Apri la tua base su airtable.com → Help → API documentation → trovi il Base ID in cima</p>
+    </div>
+    <div class="form-group" style="margin-bottom:20px">
+      <label class="form-label">Nome tabella</label>
+      <div class="settings-input-row">
+        <input id="cfg-table" class="form-input" type="text" placeholder="Tasks" value="${cfg.tableName||'Tasks'}">
+      </div>
+      <p style="font-size:11px;color:#aaa;margin-top:4px">Crea una tabella su Airtable con questi campi: <code>Title</code> (testo), <code>Column</code> (testo), <code>Owner</code> (testo), <code>Due</code> (testo), <code>Tags</code> (testo), <code>Subtasks</code> (testo lungo)</p>
+    </div>
+
+    <h2 style="margin-top:24px">Nomi del team</h2>
+    <p>Personalizza i nomi degli owner visibili nelle card.</p>
+    ${owners.map((o,i)=>`<div class="form-group" style="margin-bottom:8px">
+      <label class="form-label">Membro ${i+1}</label>
+      <input class="form-input" type="text" id="owner-name-${o.id}" value="${o.name}" placeholder="Nome...">
+    </div>`).join('')}
+
+    <div style="display:flex;gap:8px;margin-top:20px">
+      <button class="btn btn-primary" id="save-cfg-btn">Salva configurazione</button>
+      ${isConfigured()?`<button class="btn" id="back-btn">← Torna al board</button>`:''}
+    </div>
+
+    <div style="margin-top:32px;padding-top:24px;border-top:1px solid #eee">
+      <h2>Come aggiungere in Teams</h2>
+      <p style="margin-bottom:8px">1. Carica questo file HTML su <strong>GitHub Pages</strong> (gratis) o su qualsiasi hosting</p>
+      <p style="margin-bottom:8px">2. In Teams, apri il canale che vuoi → clicca <strong>+</strong> accanto alle tab in alto</p>
+      <p style="margin-bottom:8px">3. Cerca <strong>"Sito web"</strong> e incolla l'URL della tua pagina</p>
+      <p style="margin-bottom:8px">4. Salva: tutti e tre vedete il Kanban direttamente in Teams, con i dati su Airtable ✓</p>
+    </div>
+  </div>`;
+}
+
+// ── Events ─────────────────────────────────────────────────────────────────
+function bindEvents(){
+  // drag & drop
+  document.querySelectorAll('.card[draggable]').forEach(el=>{
+    el.addEventListener('dragstart',e=>{
+      dragSrcId=el.dataset.id;
+      setTimeout(()=>el.classList.add('dragging'),0);
+      e.dataTransfer.effectAllowed='move';
+    });
+    el.addEventListener('dragend',()=>{
+      document.querySelectorAll('.card').forEach(c=>c.classList.remove('dragging'));
+      dragSrcId=null;
+    });
+  });
+  document.querySelectorAll('.col-body').forEach(col=>{
+    const colId=col.dataset.col;
+    col.addEventListener('dragover',e=>{
+      e.preventDefault();
+      document.querySelectorAll('.col-body').forEach(c=>c.classList.remove('drag-over'));
+      col.classList.add('drag-over');
+    });
+    col.addEventListener('dragleave',()=>col.classList.remove('drag-over'));
+    col.addEventListener('drop',async e=>{
+      e.preventDefault();
+      col.classList.remove('drag-over');
+      if(!dragSrcId)return;
+      const card=S.cards.find(c=>c.id===dragSrcId);
+      if(card&&card.col!==colId){
+        card.col=colId;
+        render();
+        try{await updateCard(card.id,card);}catch(err){toast('Errore salvataggio: '+err.message)}
+      }
+      dragSrcId=null;
+    });
+  });
+
+  // subtask checks on board
+  document.querySelectorAll('.sub-check[data-cid]').forEach(el=>{
+    el.addEventListener('click',async()=>{
+      const cid=el.dataset.cid,sid=el.dataset.sid;
+      const card=S.cards.find(c=>c.id===cid);
+      const sub=card.subtasks.find(s=>s.id===sid);
+      sub.done=!sub.done;
+      render();
+      try{await updateCard(card.id,card);}catch(err){toast('Errore: '+err.message)}
+    });
+  });
+
+  // modal
+  const bg=document.getElementById('modal-bg');
+  if(bg)bg.addEventListener('click',e=>{if(e.target===bg){S.modal=null;S.draft=null;render()}});
+
+  const cancelBtn=document.getElementById('cancel-btn');
+  if(cancelBtn)cancelBtn.addEventListener('click',()=>{S.modal=null;S.draft=null;render()});
+
+  const saveBtn=document.getElementById('save-btn');
+  if(saveBtn)saveBtn.addEventListener('click',()=>handleSave());
+
+  const delBtn=document.getElementById('del-btn');
+  if(delBtn)delBtn.addEventListener('click',async()=>{
+    if(confirm('Eliminare questa card?'))await deleteCard(S.modal.id);
+  });
+
+  // tag picker
+  document.querySelectorAll('.tag-opt[data-tag]').forEach(el=>{
+    el.addEventListener('click',()=>{
+      const t=el.dataset.tag;
+      if(S.draft.tags.includes(t))S.draft.tags=S.draft.tags.filter(x=>x!==t);
+      else S.draft.tags=[...S.draft.tags,t];
+      el.classList.toggle('sel');
+    });
+  });
+
+  // subtask in modal
+  document.querySelectorAll('.modal-sub-check[data-sid]').forEach(el=>{
+    el.addEventListener('click',()=>{
+      const sub=S.draft.subtasks.find(s=>s.id===el.dataset.sid);
+      if(sub){sub.done=!sub.done;render()}
+    });
+  });
+  document.querySelectorAll('[data-delsub]').forEach(el=>{
+    el.addEventListener('click',()=>{
+      S.draft.subtasks=S.draft.subtasks.filter(s=>s.id!==el.dataset.delsub);
+      render();
+    });
+  });
+  const subAddBtn=document.getElementById('sub-add-btn');
+  if(subAddBtn)subAddBtn.addEventListener('click',addSubtask);
+  const subInput=document.getElementById('sub-input');
+  if(subInput)subInput.addEventListener('keydown',e=>{if(e.key==='Enter')addSubtask()});
+
+  // settings
+  const saveCfgBtn=document.getElementById('save-cfg-btn');
+  if(saveCfgBtn)saveCfgBtn.addEventListener('click',()=>{
+    const token=document.getElementById('cfg-token')?.value.trim();
+    const baseId=document.getElementById('cfg-base')?.value.trim();
+    const tableName=document.getElementById('cfg-table')?.value.trim()||'Tasks';
+    saveCfg({token,baseId,tableName});
+    S.owners.forEach(o=>{
+      const el=document.getElementById('owner-name-'+o.id);
+      if(el)o.name=el.value.trim()||o.name;
+    });
+    localStorage.setItem('tf_owners',JSON.stringify(S.owners));
+    toast('Configurazione salvata!');
+    S.view='board';
+    fetchCards();
+  });
+  const backBtn=document.getElementById('back-btn');
+  if(backBtn)backBtn.addEventListener('click',()=>{S.view='board';render()});
+}
+
+function addSubtask(){
+  const inp=document.getElementById('sub-input');
+  const txt=inp?.value.trim();
+  if(!txt)return;
+  S.draft.subtasks=[...S.draft.subtasks,{id:uid(),text:txt,done:false}];
+  render();
+  setTimeout(()=>{const i=document.getElementById('sub-input');if(i)i.focus()},50);
+}
+
+async function handleSave(){
+  const title=document.getElementById('f-title')?.value.trim();
+  if(!title)return;
+  S.draft.title=title;
+  S.draft.col=document.getElementById('f-col')?.value;
+  S.draft.owner=document.getElementById('f-owner')?.value;
+  S.draft.due=document.getElementById('f-due')?.value||'';
+  const isEdit=S.modal.mode==='edit';
+  S.modal=null;
+  try{
+    if(isEdit)await updateCard(S.draft.id,S.draft);
+    else await createCard(S.draft);
+    S.draft=null;
+  }catch(e){toast('Errore: '+e.message)}
+}
+
+function openNew(col){
+  S.draft={col:col||'todo',title:'',tags:[],owner:S.owners[0].id,due:'',subtasks:[]};
+  S.modal={mode:'new'};render();
+  setTimeout(()=>document.getElementById('f-title')?.focus(),50);
+}
+function openEdit(id){
+  const card=S.cards.find(c=>c.id===id);
+  S.draft={...card,subtasks:[...card.subtasks.map(s=>({...s}))]};
+  S.modal={mode:'edit',id};render();
+  setTimeout(()=>document.getElementById('f-title')?.focus(),50);
+}
+function toggleExp(id){S.expanded[id]=!S.expanded[id];render()}
+function toggleView(){S.view=S.view==='settings'?'board':'settings';render()}
+function openRefresh(){fetchCards()}
+
+// ── Boot ────────────────────────────────────────────────────────────────────
+const savedOwners=localStorage.getItem('tf_owners');
+if(savedOwners){try{S.owners=JSON.parse(savedOwners)}catch{}}
+fetchCards();
+</script>
+</body>
+</html>
