@@ -7,7 +7,7 @@
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#F1EFE8;color:#1a1a1a;min-height:100vh}
-:root{--purple:#534AB7;--purple-light:#EEEDFE;--purple-dark:#3C3489;--teal:#0F6E56;--teal-light:#E1F5EE;--blue:#185FA5;--blue-light:#E6F1FB;--amber:#854F0B;--amber-light:#FAEEDA;--red:#A32D2D;--red-light:#FCEBEB;--green:#3B6D11;--green-light:#EAF3DE;--border:#e2e0d8;--surface:#F7F6F2}
+:root{--purple:#534AB7;--purple-light:#EEEDFE;--purple-dark:#3C3489;--teal:#0F6E56;--teal-light:#E1F5EE;--blue:#185FA5;--blue-light:#E6F1FB;--amber:#854F0B;--red:#A32D2D;--red-light:#FCEBEB;--border:#e2e0d8;--surface:#F7F6F2}
 .topbar{display:flex;align-items:center;justify-content:space-between;padding:13px 20px;background:#fff;border-bottom:1px solid var(--border);gap:12px;position:sticky;top:0;z-index:20}
 .logo{font-size:15px;font-weight:600;color:var(--purple);letter-spacing:-.3px;display:flex;align-items:center;gap:7px}
 .logo-sq{width:22px;height:22px;background:var(--purple);border-radius:5px;display:flex;align-items:center;justify-content:center}
@@ -47,17 +47,14 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .card:active{cursor:grabbing}
 .card.dragging{opacity:.4;transform:scale(.96)}
 .card.done-card .card-title{color:#888;text-decoration:line-through}
-.card-top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:8px}
+.card-top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:6px}
 .card-title{font-size:13px;font-weight:500;line-height:1.45;flex:1}
 .card-edit{width:22px;height:22px;border-radius:4px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#bbb;font-size:15px;flex-shrink:0;transition:all .12s;border:none;background:transparent}
 .card-edit:hover{background:#f0efe9;color:#555}
-.tags{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px}
+.tags{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:7px}
 .tag{padding:2px 8px;border-radius:100px;font-size:11px;font-weight:500}
-.tag-design{background:var(--purple-light);color:#3C3489}
-.tag-dev{background:var(--blue-light);color:var(--blue)}
-.tag-mkt{background:var(--amber-light);color:var(--amber)}
-.tag-ops{background:var(--teal-light);color:var(--teal)}
-.tag-urgent{background:var(--red-light);color:var(--red)}
+.dep-badge{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:100px;font-size:11px;font-weight:500;background:#FEF3E2;color:#854F0B;border:1px solid #FAC775;margin-bottom:7px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dep-badge.blocked{background:var(--red-light);color:var(--red);border-color:#f09595}
 .card-footer{display:flex;align-items:center;justify-content:space-between;margin-top:8px}
 .owner-chip{display:flex;align-items:center;gap:5px;font-size:11px;color:#666}
 .mini-av{width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:600;flex-shrink:0}
@@ -78,45 +75,47 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .sub-item.done .sub-text{text-decoration:line-through;color:#bbb}
 .add-card-btn{margin:4px 8px 8px;padding:8px;border-radius:8px;border:1px dashed #ccc;font-size:12px;color:#aaa;cursor:pointer;display:flex;align-items:center;gap:5px;transition:all .12s;background:transparent;font-family:inherit;width:calc(100% - 16px)}
 .add-card-btn:hover{background:#fff;color:#666;border-color:#aaa}
-
-/* ── GANTT ── */
 .gantt-wrap{padding:16px 20px 24px}
 .gantt-controls{display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap}
 .gantt-controls label{font-size:12px;color:#888;font-weight:500}
 .gantt-controls input[type=date]{padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:12px;font-family:inherit;background:#fff;color:#1a1a1a}
-.gantt-controls input[type=date]:focus{outline:none;border-color:var(--purple)}
 .gantt-legend{display:flex;flex-wrap:wrap;gap:10px;margin-left:auto}
 .gantt-legend-item{display:flex;align-items:center;gap:5px;font-size:11px;color:#666}
-.gantt-legend-dot{width:10px;height:10px;border-radius:3px;flex-shrink:0}
-.gantt-container{background:#fff;border:1px solid var(--border);border-radius:12px;overflow:hidden}
-.gantt-header{display:flex;border-bottom:1px solid var(--border)}
-.gantt-label-col{width:220px;flex-shrink:0;padding:10px 14px;font-size:11px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:.05em;border-right:1px solid var(--border);background:var(--surface)}
-.gantt-dates-header{flex:1;display:flex;overflow:hidden;position:relative;background:var(--surface)}
-.gantt-day-head{flex-shrink:0;text-align:center;font-size:10px;color:#aaa;padding:4px 0;border-right:1px solid #f0efe9;font-weight:500}
+.gantt-legend-dot{width:10px;height:10px;border-radius:3px}
+.gantt-container{background:#fff;border:1px solid var(--border);border-radius:12px;overflow:auto}
+.gantt-inner{display:inline-flex;flex-direction:column;min-width:100%}
+.gantt-header{display:flex;border-bottom:1px solid var(--border);position:sticky;top:0;z-index:5;background:#fff}
+.gantt-label-col{width:230px;flex-shrink:0;padding:10px 14px;font-size:11px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:.05em;border-right:1px solid var(--border);background:var(--surface)}
+.gantt-dates-header{position:relative;background:var(--surface);height:36px;flex-shrink:0}
+.gantt-day-head{position:absolute;bottom:0;text-align:center;font-size:10px;color:#aaa;padding:2px 0;border-right:1px solid #f0efe9;font-weight:500}
 .gantt-day-head.today-head{color:var(--purple);font-weight:700}
-.gantt-day-head.weekend{background:#faf9f6}
-.gantt-row{display:flex;border-bottom:1px solid #f5f4f0;min-height:44px;align-items:center}
+.gantt-month-label{position:absolute;top:2px;font-size:10px;font-weight:600;color:#aaa;padding:0 5px;pointer-events:none;white-space:nowrap}
+.gantt-row{display:flex;border-bottom:1px solid #f5f4f0;align-items:stretch;min-width:100%}
 .gantt-row:last-child{border-bottom:none}
-.gantt-row:hover{background:#faf9f6}
-.gantt-task-label{width:220px;flex-shrink:0;padding:8px 14px;border-right:1px solid var(--border);display:flex;flex-direction:column;gap:3px}
-.gantt-task-name{font-size:12px;font-weight:500;color:#1a1a1a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.gantt-task-meta{display:flex;align-items:center;gap:5px}
-.gantt-track{flex:1;position:relative;height:44px}
-.gantt-bar{position:absolute;top:50%;transform:translateY(-50%);height:22px;border-radius:5px;display:flex;align-items:center;padding:0 8px;font-size:11px;font-weight:500;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;transition:filter .12s}
-.gantt-bar:hover{filter:brightness(.92)}
-.gantt-bar.done-bar{opacity:.5}
-.gantt-today-line{position:absolute;top:0;bottom:0;width:2px;background:var(--purple);opacity:.35;pointer-events:none;z-index:2}
+.gantt-row.task-row:hover{background:#faf9f6}
+.gantt-row.sub-row{background:#fafaf8}
+.gantt-row.sub-row:hover{background:#f5f4f0}
+.gantt-task-label{width:230px;flex-shrink:0;padding:8px 14px;border-right:1px solid var(--border);display:flex;flex-direction:column;justify-content:center;gap:3px}
+.gantt-row.sub-row .gantt-task-label{padding-left:28px}
+.g-expand{width:16px;height:16px;border:1px solid #ddd;border-radius:3px;font-size:9px;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;background:#fff;margin-right:3px;color:#888;transition:all .12s}
+.g-expand:hover{background:#f0efe9}
+.gantt-task-name{font-size:12px;font-weight:500;color:#1a1a1a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:flex;align-items:center;gap:3px}
+.gantt-sub-name{font-size:11px;color:#666;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gantt-task-meta{display:flex;align-items:center;gap:4px;margin-top:2px}
+.gantt-track{flex-shrink:0;position:relative}
+.g-bar{position:absolute;border-radius:4px;display:flex;align-items:center;padding:0 7px;font-size:10px;font-weight:500;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;transition:filter .12s;top:50%;transform:translateY(-50%)}
+.g-bar:hover{filter:brightness(.9)}
+.g-bar.done-bar{opacity:.45}
+.g-bar.sub-g{border-radius:3px;height:12px;opacity:.85;cursor:default}
+.g-today{position:absolute;top:0;bottom:0;width:2px;background:var(--purple);opacity:.3;pointer-events:none;z-index:2}
+.g-col{position:absolute;top:0;bottom:0;border-right:1px solid #f5f4f0}
+.g-col.we{background:#faf9f6}
+.g-col.td{background:rgba(83,74,183,.04)}
 .gantt-empty{padding:40px;text-align:center;color:#aaa;font-size:13px}
-.gantt-day-col{position:absolute;top:0;bottom:0;border-right:1px solid #f5f4f0}
-.gantt-day-col.weekend{background:#faf9f6}
-.gantt-day-col.today-col{background:rgba(83,74,183,.04)}
-.gantt-month-label{position:absolute;top:0;font-size:10px;font-weight:600;color:#aaa;padding:4px 6px;pointer-events:none}
-
-/* ── MODAL ── */
 .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.38);display:flex;align-items:center;justify-content:center;z-index:100}
-.modal{background:#fff;border-radius:14px;padding:26px;width:480px;max-width:95vw;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.15)}
-.modal-title{font-size:16px;font-weight:600;margin-bottom:20px}
-.form-group{margin-bottom:15px}
+.modal{background:#fff;border-radius:14px;padding:26px;width:500px;max-width:95vw;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.15)}
+.modal-title{font-size:16px;font-weight:600;margin-bottom:18px}
+.form-group{margin-bottom:13px}
 .form-label{font-size:11px;color:#888;font-weight:600;margin-bottom:5px;display:block;text-transform:uppercase;letter-spacing:.05em}
 .form-row-2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .form-input{width:100%;padding:9px 11px;border:1px solid #ddd;border-radius:8px;font-size:13px;background:#fff;color:#1a1a1a;font-family:inherit;transition:border-color .12s}
@@ -127,16 +126,19 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .sub-input-row{display:flex;gap:6px;margin-top:8px}
 .sub-input-row input{flex:1;padding:6px 9px;border:1px solid #ddd;border-radius:6px;font-size:12px;background:#fff;color:#1a1a1a;font-family:inherit}
 .sub-input-row input:focus{outline:none;border-color:var(--purple)}
-.sub-input-row button{padding:6px 11px;border:1px solid #ddd;border-radius:6px;font-size:12px;background:#fff;color:#1a1a1a;cursor:pointer;font-family:inherit;transition:background .12s}
+.sub-input-row button{padding:6px 11px;border:1px solid #ddd;border-radius:6px;font-size:12px;background:#fff;color:#1a1a1a;cursor:pointer;font-family:inherit}
 .sub-input-row button:hover{background:#f5f4f0}
-.modal-sub-item{display:flex;align-items:center;gap:6px;padding:5px 0;border-bottom:1px solid #f5f4f0;font-size:13px}
+.modal-sub-item{display:flex;align-items:center;gap:6px;padding:5px 0;border-bottom:1px solid #f5f4f0}
 .modal-sub-item:last-child{border-bottom:none}
-.modal-sub-check{width:16px;height:16px;border:1.5px solid #ccc;border-radius:3px;flex-shrink:0;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:9px;background:#fff}
+.modal-sub-check{width:15px;height:15px;border:1.5px solid #ccc;border-radius:3px;flex-shrink:0;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:9px;background:#fff}
 .modal-sub-check.done{background:var(--teal);border-color:var(--teal);color:#fff}
-.modal-sub-text{flex:1}
-.modal-sub-del{width:20px;height:20px;border:none;background:none;cursor:pointer;color:#ccc;font-size:13px;display:flex;align-items:center;justify-content:center;border-radius:3px}
+.modal-sub-text{flex:1;font-size:13px;min-width:0}
+.modal-sub-dates{display:flex;gap:3px;align-items:center;flex-shrink:0}
+.modal-sub-dates input{width:110px;padding:3px 5px;border:1px solid #ddd;border-radius:5px;font-size:11px;font-family:inherit;color:#1a1a1a;background:#fff}
+.modal-sub-dates input:focus{outline:none;border-color:var(--purple)}
+.modal-sub-del{width:20px;height:20px;border:none;background:none;cursor:pointer;color:#ccc;font-size:12px;display:flex;align-items:center;justify-content:center;border-radius:3px;flex-shrink:0}
 .modal-sub-del:hover{background:#f5f4f0;color:#888}
-.modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:22px;padding-top:16px;border-top:1px solid #f0efe9}
+.modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:20px;padding-top:14px;border-top:1px solid #f0efe9}
 .loading{display:flex;align-items:center;justify-content:center;height:200px;color:#aaa;font-size:14px;gap:8px}
 .spinner{width:18px;height:18px;border:2px solid #ddd;border-top-color:var(--purple);border-radius:50%;animation:spin .7s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
@@ -144,12 +146,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .toast.show{opacity:1}
 .error-banner{background:var(--red-light);border:1px solid #f09595;color:var(--red);padding:10px 20px;font-size:13px;display:flex;align-items:center;gap:8px}
 .settings-section{padding:20px;max-width:520px}
-.settings-section h2{font-size:15px;font-weight:600;margin-bottom:12px}
+.settings-section h2{font-size:15px;font-weight:600;margin-bottom:10px}
 .settings-section p{font-size:13px;color:#666;margin-bottom:10px;line-height:1.6}
 .settings-section code{background:#f5f4f0;padding:2px 6px;border-radius:4px;font-size:12px;font-family:monospace}
-.settings-input-row{display:flex;gap:8px;margin-bottom:8px}
-.settings-input-row input{flex:1;padding:8px 11px;border:1px solid #ddd;border-radius:8px;font-size:13px;font-family:inherit}
-.settings-input-row input:focus{outline:none;border-color:var(--purple)}
+.si-row{display:flex;gap:8px;margin-bottom:8px}
+.si-row input{flex:1;padding:8px 11px;border:1px solid #ddd;border-radius:8px;font-size:13px;font-family:inherit}
+.si-row input:focus{outline:none;border-color:var(--purple)}
 </style>
 </head>
 <body>
@@ -157,51 +159,53 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 <div class="toast" id="toast"></div>
 <script>
 const COLS=[
-  {id:'todo',title:'Da fare',color:'#888780'},
-  {id:'doing',title:'In corso',color:'#185FA5'},
-  {id:'review',title:'In review',color:'#BA7517'},
-  {id:'done',title:'Fatto',color:'#0F6E56'},
+  {id:'todo',   title:'Da fare',  color:'#888780'},
+  {id:'doing',  title:'In corso', color:'#185FA5'},
+  {id:'blocked',title:'Bloccate', color:'#A32D2D'},
+  {id:'done',   title:'Fatto',    color:'#0F6E56'},
 ];
 const DEFAULT_TAGS=[
-  {id:'design',label:'design',color:'#7F77DD'},
-  {id:'dev',label:'dev',color:'#378ADD'},
-  {id:'mkt',label:'marketing',color:'#EF9F27'},
-  {id:'ops',label:'ops',color:'#1D9E75'},
-  {id:'urgent',label:'urgente',color:'#E24B4A'},
+  {id:'design', label:'design',    color:'#7F77DD'},
+  {id:'dev',    label:'dev',       color:'#378ADD'},
+  {id:'mkt',    label:'marketing', color:'#EF9F27'},
+  {id:'ops',    label:'ops',       color:'#1D9E75'},
+  {id:'urgent', label:'urgente',   color:'#E24B4A'},
 ];
-let TAGS=DEFAULT_TAGS;
-function loadTags(){try{const t=localStorage.getItem('tf_tags');if(t)TAGS=JSON.parse(t);}catch{}}
-function saveTags(){localStorage.setItem('tf_tags',JSON.stringify(TAGS))}
-function tagById(id){return TAGS.find(t=>t.id===id)}
-function tagCss(color){
-  // generate light bg and dark text from hex bar color
-  const r=parseInt(color.slice(1,3),16),g=parseInt(color.slice(3,5),16),b=parseInt(color.slice(5,7),16);
-  return {bg:`rgba(${r},${g},${b},0.12)`,text:color};
-}
+let TAGS=[...DEFAULT_TAGS];
 const DEFAULT_OWNERS=[
-  {id:'owner1',name:'Tu',initials:'AZ',color:'#534AB7',bg:'#EEEDFE'},
-  {id:'owner2',name:'Anna',initials:'LM',color:'#185FA5',bg:'#E6F1FB'},
-  {id:'owner3',name:'Beppe',initials:'LP',color:'#0F6E56',bg:'#E1F5EE'},
+  {id:'owner1',name:'Tu',   initials:'TU',color:'#534AB7',bg:'#EEEDFE'},
+  {id:'owner2',name:'Anna', initials:'AN',color:'#185FA5',bg:'#E6F1FB'},
+  {id:'owner3',name:'Beppe',initials:'BE',color:'#0F6E56',bg:'#E1F5EE'},
 ];
 
 function getCfg(){try{return JSON.parse(localStorage.getItem('tf_cfg')||'{}')}catch{return{}}}
-function saveCfg(cfg){localStorage.setItem('tf_cfg',JSON.stringify(cfg))}
+function saveCfg(c){localStorage.setItem('tf_cfg',JSON.stringify(c))}
+function isConfigured(){const c=getCfg();return !!(c.token&&c.baseId)}
+function apiBase(tbl){const c=getCfg();return`https://api.airtable.com/v0/${c.baseId}/${encodeURIComponent(tbl||c.tableName||'Tasks')}`}
+function apiHeaders(){const c=getCfg();return{'Authorization':`Bearer ${c.token}`,'Content-Type':'application/json'}}
 
-let S={
-  cards:[],owners:DEFAULT_OWNERS,loading:true,error:null,
-  modal:null,expanded:{},dragging:null,
-  view:'board', // 'board'|'gantt'|'settings'
-  draft:null,
-  ganttStart:'',ganttEnd:'',
-};
+let S={cards:[],owners:[...DEFAULT_OWNERS],loading:true,error:null,modal:null,expanded:{},ganttExp:{},view:'board',draft:null,ganttStart:'',ganttEnd:''};
 let dragSrcId=null;
 
-function apiBase(){const c=getCfg();return`https://api.airtable.com/v0/${c.baseId}/${encodeURIComponent(c.tableName||'Tasks')}`}
-function apiHeaders(){const c=getCfg();return{'Authorization':`Bearer ${c.token}`,'Content-Type':'application/json'}}
-function isConfigured(){const c=getCfg();return !!(c.token&&c.baseId)}
+function uid(){return 'x'+Math.random().toString(36).slice(2,9)}
+function todayStr(){return new Date().toISOString().slice(0,10)}
+function addDays(d,n){const dt=new Date(d);dt.setDate(dt.getDate()+n);return dt.toISOString().slice(0,10)}
+function diffDays(a,b){return Math.round((new Date(b)-new Date(a))/86400000)}
+function fmt(d){if(!d)return'';const p=d.split('-');return p[2]+'/'+p[1]}
+function isOverdue(d){if(!d)return false;return new Date(d)<new Date(new Date().toDateString())}
+function ownerById(id){return S.owners.find(o=>o.id===id)||S.owners[0]}
+function tagById(id){return TAGS.find(t=>t.id===id)}
+function tagCss(color){const r=parseInt(color.slice(1,3),16),g=parseInt(color.slice(3,5),16),b=parseInt(color.slice(5,7),16);return{bg:`rgba(${r},${g},${b},0.13)`,text:color}}
+function tagBar(tags){if(!tags||!tags.length)return'#B4B2A9';const t=tagById(tags[0]);return t?t.color:'#B4B2A9'}
+function doneRatio(subs){if(!subs||!subs.length)return null;return{d:subs.filter(s=>s.done).length,t:subs.length}}
+function cardById(id){return S.cards.find(c=>c.id===id)}
+function toast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');setTimeout(()=>el.classList.remove('show'),2600)}
+function bind(id,ev,fn){const el=document.getElementById(id);if(el)el.addEventListener(ev,fn)}
 
-function subField(fields){
-  return fields.Subtasks||fields.subtasks||fields.Subtask||fields.subtask||'';
+function subField(f){return f.Subtasks||f.subtasks||f.Subtask||f.subtask||''}
+function toFields(d){
+  return{Title:d.title,Column:d.col,Owner:d.owner,Due:d.due||'',Start:d.start||'',
+    Tags:(d.tags||[]).join(','),Subtasks:JSON.stringify(d.subtasks||[]),DependsOn:d.dependsOn||''};
 }
 
 async function fetchCards(){
@@ -213,24 +217,15 @@ async function fetchCards(){
       const url=apiBase()+(offset?`?offset=${offset}`:'');
       const r=await fetch(url,{headers:apiHeaders()});
       if(!r.ok){const e=await r.json();throw new Error(e.error?.message||r.statusText)}
-      const d=await r.json();
-      all=[...all,...d.records];
-      offset=d.offset||null;
+      const d=await r.json();all=[...all,...d.records];offset=d.offset||null;
     }while(offset);
     S.cards=all.map(rec=>{
-      let subs=[];
-      const raw=subField(rec.fields);
+      let subs=[];const raw=subField(rec.fields);
       if(raw){try{subs=JSON.parse(raw)}catch{}}
-      return{
-        id:rec.id,
-        title:rec.fields.Title||'',
-        col:rec.fields.Column||'todo',
-        owner:rec.fields.Owner||'owner1',
-        due:rec.fields.Due||'',
-        start:rec.fields.Start||'',
-        tags:(rec.fields.Tags||'').split(',').filter(Boolean),
-        subtasks:subs,
-      };
+      return{id:rec.id,title:rec.fields.Title||'',col:rec.fields.Column||'todo',
+        owner:rec.fields.Owner||'owner1',due:rec.fields.Due||'',start:rec.fields.Start||'',
+        tags:(rec.fields.Tags||'').split(',').filter(Boolean),subtasks:subs,
+        dependsOn:rec.fields.DependsOn||''};
     });
     S.error=null;
   }catch(e){S.error=e.message}
@@ -241,9 +236,7 @@ async function createCard(data){
   if(!isConfigured()){S.cards.push({id:uid(),...data});render();toast('Card creata (locale)');return;}
   const r=await fetch(apiBase(),{method:'POST',headers:apiHeaders(),body:JSON.stringify({fields:toFields(data)})});
   if(!r.ok){const e=await r.json();throw new Error(e.error?.message||r.statusText)}
-  const d=await r.json();
-  S.cards.push({id:d.id,...data});
-  render();toast('Card creata ✓');
+  const d=await r.json();S.cards.push({id:d.id,...data});render();toast('Card creata ✓');
 }
 
 async function updateCard(id,data){
@@ -257,392 +250,279 @@ async function updateCard(id,data){
 }
 
 async function deleteCard(id){
+  if(!isConfigured()){S.cards=S.cards.filter(c=>c.id!==id);S.modal=null;render();toast('Eliminata');return;}
   const r=await fetch(`${apiBase()}/${id}`,{method:'DELETE',headers:apiHeaders()});
   if(!r.ok){const e=await r.json();throw new Error(e.error?.message||r.statusText)}
-  S.cards=S.cards.filter(c=>c.id!==id);
-  S.modal=null;render();toast('Card eliminata');
+  S.cards=S.cards.filter(c=>c.id!==id);S.modal=null;render();toast('Card eliminata');
 }
 
-function toFields(d){
-  return{Title:d.title,Column:d.col,Owner:d.owner,Due:d.due||'',Start:d.start||'',Tags:d.tags.join(','),Subtasks:JSON.stringify(d.subtasks)};
+async function fetchSettings(){
+  if(!isConfigured())return;
+  try{
+    const r=await fetch(apiBase('Settings'),{headers:apiHeaders()});
+    if(!r.ok)return;
+    const d=await r.json();
+    d.records.forEach(rec=>{
+      if(rec.fields.Key==='owners'){try{S.owners=JSON.parse(rec.fields.Value)}catch{}}
+      if(rec.fields.Key==='tags'){try{TAGS=JSON.parse(rec.fields.Value)}catch{}}
+    });
+    if(d.records.length){
+      localStorage.setItem('tf_owners',JSON.stringify(S.owners));
+      localStorage.setItem('tf_tags',JSON.stringify(TAGS));
+    }
+  }catch{}
 }
 
-function uid(){return 'x'+Math.random().toString(36).slice(2,9)}
-function fmt(d){if(!d)return'';const p=d.split('-');return p[2]+'/'+p[1]}
-function isOverdue(d){if(!d)return false;return new Date(d)<new Date(new Date().toDateString())}
-function ownerById(id){return S.owners.find(o=>o.id===id)||S.owners[0]}
-function doneRatio(subs){if(!subs||!subs.length)return null;return{d:subs.filter(s=>s.done).length,t:subs.length}}
-function toast(msg){const el=document.getElementById('toast');el.textContent=msg;el.classList.add('show');setTimeout(()=>el.classList.remove('show'),2500)}
-function tagBar(tags){if(!tags||!tags.length)return'#888';const t=tagById(tags[0]);return t?t.color:'#888'}
-
-function todayStr(){return new Date().toISOString().slice(0,10)}
-function addDays(dateStr,n){const d=new Date(dateStr);d.setDate(d.getDate()+n);return d.toISOString().slice(0,10)}
-function diffDays(a,b){return Math.round((new Date(b)-new Date(a))/(86400000))}
-
-function render(){
-  document.getElementById('root').innerHTML=buildHTML();
-  bindEvents();
+async function pushSettings(){
+  if(!isConfigured())return;
+  try{
+    const r=await fetch(apiBase('Settings'),{headers:apiHeaders()});
+    const existing=r.ok?(await r.json()).records:[];
+    const upsert=async(key,value)=>{
+      const rec=existing.find(x=>x.fields.Key===key);
+      const body=JSON.stringify({fields:{Key:key,Value:JSON.stringify(value)}});
+      if(rec){await fetch(`${apiBase('Settings')}/${rec.id}`,{method:'PATCH',headers:apiHeaders(),body});}
+      else{await fetch(apiBase('Settings'),{method:'POST',headers:apiHeaders(),body});}
+    };
+    await upsert('owners',S.owners);
+    await upsert('tags',TAGS);
+  }catch(e){toast('Errore sync settings: '+e.message)}
 }
+
+function render(){document.getElementById('root').innerHTML=buildHTML();bindEvents()}
 
 function buildHTML(){
-  const total=S.cards.length;
-  const done=S.cards.filter(c=>c.col==='done').length;
-  const overdue=S.cards.filter(c=>c.col!=='done'&&isOverdue(c.due)).length;
-  const inprog=S.cards.filter(c=>c.col==='doing').length;
-  return`
-  ${buildTopbar()}
-  ${!isConfigured()?buildConfigBanner():''}
-  ${S.error?`<div class="error-banner">⚠ Errore Airtable: ${S.error} — <button class="btn btn-sm" onclick="fetchCards()" style="margin-left:8px">Riprova</button></div>`:''}
+  const total=S.cards.length,done=S.cards.filter(c=>c.col==='done').length,
+    overdue=S.cards.filter(c=>c.col!=='done'&&isOverdue(c.due)).length,
+    inprog=S.cards.filter(c=>c.col==='doing').length;
+  return`${buildTopbar()}
+  ${!isConfigured()?`<div class="config-bar"><span>⚡ Configura Airtable per sincronizzare i dati →</span><button class="btn btn-sm btn-primary" onclick="setView('settings')">Configura ora</button></div>`:''}
+  ${S.error?`<div class="error-banner">⚠ Errore: ${S.error} <button class="btn btn-sm" onclick="fetchCards()" style="margin-left:8px">Riprova</button></div>`:''}
   ${S.view==='settings'?buildSettings():S.view==='gantt'?buildGantt():buildBoard(total,done,overdue,inprog)}
-  ${S.modal?buildModal():''}
-  `;
+  ${S.modal?buildModal():''}`;
 }
 
 function buildTopbar(){
   const v=S.view;
   return`<div class="topbar">
-    <div class="logo">
-      <div class="logo-sq"><svg viewBox="0 0 13 13"><rect x="1" y="1" width="4" height="4" rx="1"/><rect x="1" y="7" width="4" height="4" rx="1"/><rect x="7" y="1" width="4" height="4" rx="1"/><rect x="7" y="7" width="4" height="4" rx="1"/></svg></div>
-      TeamFlow
-    </div>
+    <div class="logo"><div class="logo-sq"><svg viewBox="0 0 13 13"><rect x="1" y="1" width="4" height="4" rx="1"/><rect x="1" y="7" width="4" height="4" rx="1"/><rect x="7" y="1" width="4" height="4" rx="1"/><rect x="7" y="7" width="4" height="4" rx="1"/></svg></div>TeamFlow</div>
     <div class="topbar-right">
       <div class="avatars">${S.owners.map(o=>`<div class="av" data-name="${o.name}" style="background:${o.bg};color:${o.color}">${o.initials}</div>`).join('')}</div>
-      ${v!=='settings'?`<div class="view-toggle">
-        <button class="view-btn${v==='board'?' active':''}" onclick="setView('board')">Kanban</button>
-        <button class="view-btn${v==='gantt'?' active':''}" onclick="setView('gantt')">Gantt</button>
-      </div>`:''}
-      ${isConfigured()?`<button class="btn btn-sm btn-ghost" onclick="fetchCards()" title="Aggiorna">↻</button>`:''}
-      <button class="btn btn-sm btn-ghost" onclick="setView('settings')" title="Impostazioni">⚙</button>
-      ${v==='board'&&isConfigured()?`<button class="btn btn-primary btn-sm" onclick="openNew()">+ Nuova card</button>`:''}
-      ${v==='gantt'&&isConfigured()?`<button class="btn btn-primary btn-sm" onclick="openNew()">+ Nuova card</button>`:''}
+      ${v!=='settings'?`<div class="view-toggle"><button class="view-btn${v==='board'?' active':''}" onclick="setView('board')">Kanban</button><button class="view-btn${v==='gantt'?' active':''}" onclick="setView('gantt')">Gantt</button></div>`:''}
+      ${isConfigured()?`<button class="btn btn-sm btn-ghost" onclick="boot()" title="Aggiorna">↻</button>`:''}
+      <button class="btn btn-sm btn-ghost" onclick="setView('settings')">⚙</button>
+      ${v!=='settings'&&isConfigured()?`<button class="btn btn-primary btn-sm" onclick="openNew()">+ Nuova card</button>`:''}
     </div>
-  </div>`;
-}
-
-function buildConfigBanner(){
-  return`<div class="config-bar">
-    <span>⚡ Configura Airtable per salvare i dati condivisi →</span>
-    <button class="btn btn-sm btn-primary" onclick="setView('settings')">Configura ora</button>
   </div>`;
 }
 
 function buildBoard(total,done,overdue,inprog){
   if(S.loading)return`<div class="loading"><div class="spinner"></div> Carico da Airtable...</div>`;
-  return`
-  <div class="dash-row">
-    <div class="stat"><div class="stat-label">Totale task</div><div class="stat-val">${total}</div></div>
+  return`<div class="dash-row">
+    <div class="stat"><div class="stat-label">Totale</div><div class="stat-val">${total}</div></div>
     <div class="stat"><div class="stat-label">In corso</div><div class="stat-val" style="color:#185FA5">${inprog}</div></div>
     <div class="stat"><div class="stat-label">Completate</div><div class="stat-val" style="color:#0F6E56">${done}</div></div>
     <div class="stat"><div class="stat-label">Scadute</div><div class="stat-val" style="color:${overdue?'#A32D2D':'#1a1a1a'}">${overdue}</div></div>
   </div>
-  <div class="board" id="board">
-    ${COLS.map(col=>{
-      const cards=S.cards.filter(c=>c.col===col.id);
-      return`<div class="col">
-        <div class="col-head">
-          <div class="col-dot" style="background:${col.color}"></div>
-          <div class="col-title">${col.title}</div>
-          <div class="col-count">${cards.length}</div>
-        </div>
-        <div class="col-body" id="col-${col.id}" data-col="${col.id}">
-          ${cards.map(c=>buildCard(c)).join('')}
-        </div>
-        <button class="add-card-btn" onclick="openNew('${col.id}')">+ aggiungi</button>
-      </div>`;
-    }).join('')}
+  <div class="board">
+    ${COLS.map(col=>`<div class="col">
+      <div class="col-head"><div class="col-dot" style="background:${col.color}"></div><div class="col-title">${col.title}</div><div class="col-count">${S.cards.filter(c=>c.col===col.id).length}</div></div>
+      <div class="col-body" id="col-${col.id}" data-col="${col.id}">${S.cards.filter(c=>c.col===col.id).map(c=>buildCard(c)).join('')}</div>
+      <button class="add-card-btn" onclick="openNew('${col.id}')">+ aggiungi</button>
+    </div>`).join('')}
   </div>`;
 }
 
 function buildCard(c){
-  const o=ownerById(c.owner);
-  const ratio=doneRatio(c.subtasks);
-  const od=isOverdue(c.due)&&c.col!=='done';
-  const exp=S.expanded[c.id];
+  const o=ownerById(c.owner),ratio=doneRatio(c.subtasks),od=isOverdue(c.due)&&c.col!=='done',exp=S.expanded[c.id];
+  const dep=c.dependsOn?cardById(c.dependsOn):null,depBlocked=dep&&dep.col!=='done';
   const pct=ratio?Math.round(ratio.d/ratio.t*100):0;
   return`<div class="card${c.col==='done'?' done-card':''}" data-id="${c.id}" draggable="true">
-    <div class="card-top">
-      <div class="card-title">${c.title}</div>
-      <button class="card-edit" onclick="openEdit('${c.id}')">⋯</button>
-    </div>
-    ${c.tags.length?`<div class="tags">${c.tags.map(t=>{const tg=tagById(t);if(!tg)return'';const cs=tagCss(tg.color);return`<span class="tag" style="background:${cs.bg};color:${cs.text}">${tg.label}</span>`;}).join('')}</div>`:''}
-    ${ratio!==null?`<div class="sub-bar">
-      <div class="sub-track"><div class="sub-fill" style="width:${pct}%"></div></div>
-      <div class="sub-meta">
-        <div class="sub-label">${ratio.d}/${ratio.t} subtask</div>
-        <button class="expand-btn" onclick="toggleExp('${c.id}')">
-          <svg width="9" height="9" viewBox="0 0 9 9" style="transition:transform .2s;transform:rotate(${exp?90:0}deg)"><path d="M2.5 1.5l4 3-4 3" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          ${exp?'nascondi':'mostra'}
-        </button>
+    <div class="card-top"><div class="card-title">${c.title}</div><button class="card-edit" onclick="openEdit('${c.id}')">⋯</button></div>
+    ${c.tags.length?`<div class="tags">${c.tags.map(t=>{const tg=tagById(t);if(!tg)return'';const cs=tagCss(tg.color);return`<span class="tag" style="background:${cs.bg};color:${cs.text}">${tg.label}</span>`}).join('')}</div>`:''}
+    ${dep?`<div class="dep-badge${depBlocked?' blocked':''}" title="${dep.title}">⟶ ${dep.title.length>24?dep.title.slice(0,24)+'…':dep.title}</div>`:''}
+    ${ratio!==null?`<div class="sub-bar"><div class="sub-track"><div class="sub-fill" style="width:${pct}%"></div></div>
+      <div class="sub-meta"><div class="sub-label">${ratio.d}/${ratio.t} subtask</div>
+        <button class="expand-btn" onclick="toggleExp('${c.id}')"><svg width="9" height="9" viewBox="0 0 9 9" style="transition:transform .2s;transform:rotate(${exp?90:0}deg)"><path d="M2.5 1.5l4 3-4 3" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>${exp?'nascondi':'mostra'}</button>
       </div>
       <div class="subtasks-list${exp?' open':''}">
-        ${c.subtasks.map(s=>`<div class="sub-item${s.done?' done':''}">
-          <div class="sub-check${s.done?' done':''}" data-cid="${c.id}" data-sid="${s.id}">${s.done?'✓':''}</div>
-          <span class="sub-text">${s.text}</span>
-        </div>`).join('')}
-      </div>
-    </div>`:''}
+        ${c.subtasks.map(s=>`<div class="sub-item${s.done?' done':''}"><div class="sub-check${s.done?' done':''}" data-cid="${c.id}" data-sid="${s.id}">${s.done?'✓':''}</div><span class="sub-text">${s.text}</span></div>`).join('')}
+      </div></div>`:''}
     <div class="card-footer">
-      <div class="owner-chip">
-        <div class="mini-av" style="background:${o.bg};color:${o.color}">${o.initials}</div>
-        ${o.name}
-      </div>
+      <div class="owner-chip"><div class="mini-av" style="background:${o.bg};color:${o.color}">${o.initials}</div>${o.name}</div>
       ${c.due?`<div class="date-chip${od?' date-overdue':''}">${od?'▲ ':''}${fmt(c.due)}</div>`:''}
     </div>
   </div>`;
 }
 
-// ── GANTT ──────────────────────────────────────────────────────────────────
 function buildGantt(){
-  if(S.loading)return`<div class="loading"><div class="spinner"></div> Carico da Airtable...</div>`;
+  if(S.loading)return`<div class="loading"><div class="spinner"></div> Carico...</div>`;
+  const rs=S.ganttStart||todayStr(),re=S.ganttEnd||addDays(todayStr(),30);
+  const totalDays=diffDays(rs,re)+1,DAY_W=Math.max(22,Math.min(38,Math.floor(720/totalDays)));
+  const visible=S.cards.filter(c=>c.start&&c.due&&c.start<=re&&c.due>=rs);
+  const usedTags=new Set(visible.flatMap(c=>c.tags));
 
-  // default range: today → +30 days
-  const rangeStart=S.ganttStart||todayStr();
-  const rangeEnd=S.ganttEnd||addDays(rangeStart,30);
-
-  // only cards with both start and due, due >= rangeStart, start <= rangeEnd
-  const visible=S.cards.filter(c=>c.start&&c.due&&c.start<=rangeEnd&&c.due>=rangeStart);
-
-  const totalDays=diffDays(rangeStart,rangeEnd)+1;
-  const DAY_W=Math.max(28, Math.min(44, Math.floor(800/totalDays)));
-
-  // build day columns array
   const days=[];
   for(let i=0;i<totalDays;i++){
-    const d=addDays(rangeStart,i);
-    const dt=new Date(d);
-    const dow=dt.getDay();
-    days.push({date:d,label:String(dt.getDate()),isWeekend:dow===0||dow===6,isToday:d===todayStr(),month:dt.getMonth(),year:dt.getFullYear()});
+    const d=addDays(rs,i),dt=new Date(d),dow=dt.getDay();
+    days.push({date:d,label:String(dt.getDate()),we:dow===0||dow===6,today:d===todayStr(),month:dt.getMonth(),year:dt.getFullYear()});
   }
-
-  // month labels
   const months=[];
-  days.forEach((d,i)=>{
-    if(i===0||(i>0&&days[i-1].month!==d.month)){
-      const names=['Gen','Feb','Mar','Apr','Mag','Giu','Lug','Ago','Set','Ott','Nov','Dic'];
-      months.push({label:names[d.month]+' '+d.year,offset:i*DAY_W});
+  days.forEach((d,i)=>{if(i===0||days[i-1].month!==d.month){const nm=['Gen','Feb','Mar','Apr','Mag','Giu','Lug','Ago','Set','Ott','Nov','Dic'];months.push({label:nm[d.month]+' '+d.year,off:i*DAY_W})}});
+  const todayOff=(todayStr()>=rs&&todayStr()<=re)?diffDays(rs,todayStr())*DAY_W:-9999;
+  const W=totalDays*DAY_W;
+
+  function bp(s,e){const cs=s<rs?rs:s,ce=e>re?re:e;return{l:diffDays(rs,cs)*DAY_W,w:Math.max(DAY_W-2,(diffDays(cs,ce)+1)*DAY_W-2)}}
+  const grid=`${days.map((d,i)=>`<div class="g-col${d.we?' we':''}${d.today?' td':''}" style="left:${i*DAY_W}px;width:${DAY_W}px"></div>`).join('')}<div class="g-today" style="left:${todayOff}px"></div>`;
+
+  const rows=visible.map(c=>{
+    const color=tagBar(c.tags),{l,w}=bp(c.start,c.due),exp=S.ganttExp[c.id];
+    const hasSubs=c.subtasks&&c.subtasks.some(s=>s.start&&s.due);
+    const o=ownerById(c.owner);
+    let html=`<div class="gantt-row task-row">
+      <div class="gantt-task-label">
+        <div class="gantt-task-name">${hasSubs?`<span class="g-expand" onclick="toggleGanttExp('${c.id}')">${exp?'▾':'▸'}</span>`:'<span style="width:19px;display:inline-block"></span>'}<span style="overflow:hidden;text-overflow:ellipsis">${c.title}</span></div>
+        <div class="gantt-task-meta"><div class="mini-av" style="background:${o.bg};color:${o.color};width:15px;height:15px;font-size:7px">${o.initials}</div>${c.tags.slice(0,2).map(t=>{const tg=tagById(t);if(!tg)return'';const cs=tagCss(tg.color);return`<span class="tag" style="background:${cs.bg};color:${cs.text};padding:1px 5px;font-size:10px">${tg.label}</span>`}).join('')}</div>
+      </div>
+      <div class="gantt-track" style="width:${W}px;height:44px">${grid}<div class="g-bar${c.col==='done'?' done-bar':''}" style="left:${l+1}px;width:${w}px;background:${color};height:20px" onclick="openEdit('${c.id}')" title="${c.title} ${fmt(c.start)}→${fmt(c.due)}">${w>55?c.title:''}</div></div>
+    </div>`;
+    if(exp){
+      c.subtasks.filter(s=>s.start&&s.due&&s.start<=re&&s.due>=rs).forEach(s=>{
+        const{l:sl,w:sw}=bp(s.start,s.due);
+        html+=`<div class="gantt-row sub-row">
+          <div class="gantt-task-label"><div class="gantt-sub-name">↳ ${s.text}</div><div style="font-size:10px;color:#aaa">${fmt(s.start)} → ${fmt(s.due)}</div></div>
+          <div class="gantt-track" style="width:${W}px;height:34px">${grid}<div class="g-bar sub-g${s.done?' done-bar':''}" style="left:${sl+1}px;width:${sw}px;background:${color}" title="${s.text}"></div></div>
+        </div>`;
+      });
     }
-  });
-
-  const todayOffset=(todayStr()>=rangeStart&&todayStr()<=rangeEnd)?diffDays(rangeStart,todayStr())*DAY_W:-999;
-
-  // unique tags for legend
-  const usedTags=new Set(visible.flatMap(c=>c.tags));
-  const legendTags=TAGS.filter(t=>usedTags.has(t.id));
-  const noTagBar='#888780';
-
-  function barStyle(c){
-    const s=c.start<rangeStart?rangeStart:c.start;
-    const e=c.due>rangeEnd?rangeEnd:c.due;
-    const left=diffDays(rangeStart,s)*DAY_W;
-    const width=Math.max(DAY_W,(diffDays(s,e)+1)*DAY_W)-2;
-    const color=c.tags.length?tagBar(c.tags):noTagBar;
-    return{left,width,color};
-  }
+    return html;
+  }).join('');
 
   return`<div class="gantt-wrap">
     <div class="gantt-controls">
-      <label>Dal</label>
-      <input type="date" id="g-start" value="${rangeStart}" onchange="S.ganttStart=this.value;render()">
-      <label>al</label>
-      <input type="date" id="g-end" value="${rangeEnd}" onchange="S.ganttEnd=this.value;render()">
-      <button class="btn btn-sm" onclick="S.ganttStart=todayStr();S.ganttEnd=addDays(todayStr(),30);render()">Questo mese</button>
+      <label>Dal</label><input type="date" value="${rs}" onchange="S.ganttStart=this.value;render()">
+      <label>al</label><input type="date" value="${re}" onchange="S.ganttEnd=this.value;render()">
+      <button class="btn btn-sm" onclick="S.ganttStart=todayStr();S.ganttEnd=addDays(todayStr(),30);render()">30 giorni</button>
       <button class="btn btn-sm" onclick="S.ganttStart=todayStr();S.ganttEnd=addDays(todayStr(),90);render()">3 mesi</button>
-      <div class="gantt-legend">
-        ${legendTags.map(t=>`<div class="gantt-legend-item"><div class="gantt-legend-dot" style="background:${t.color}"></div>${t.label}</div>`).join('')}
-        ${usedTags.size===0||[...usedTags].some(t=>!TAGS.find(x=>x.id===t))?`<div class="gantt-legend-item"><div class="gantt-legend-dot" style="background:${noTagBar}"></div>nessun tag</div>`:''}
-      </div>
+      <div class="gantt-legend">${TAGS.filter(t=>usedTags.has(t.id)).map(t=>`<div class="gantt-legend-item"><div class="gantt-legend-dot" style="background:${t.color}"></div>${t.label}</div>`).join('')}</div>
     </div>
-
     <div class="gantt-container">
-      <div class="gantt-header">
-        <div class="gantt-label-col">Task</div>
-        <div class="gantt-dates-header" style="position:relative;height:36px;overflow:hidden">
-          ${months.map(m=>`<div class="gantt-month-label" style="left:${m.offset}px">${m.label}</div>`).join('')}
-          <div style="position:absolute;bottom:0;left:0;display:flex">
-            ${days.map(d=>`<div class="gantt-day-head${d.isToday?' today-head':''}${d.isWeekend?' weekend':''}" style="width:${DAY_W}px">${d.label}</div>`).join('')}
+      <div class="gantt-inner">
+        <div class="gantt-header">
+          <div class="gantt-label-col">Task</div>
+          <div class="gantt-dates-header" style="width:${W}px">
+            ${months.map(m=>`<div class="gantt-month-label" style="left:${m.off}px">${m.label}</div>`).join('')}
+            ${days.map((d,i)=>`<div class="gantt-day-head${d.today?' today-head':''}${d.we?' weekend':''}" style="width:${DAY_W}px;left:${i*DAY_W}px">${d.label}</div>`).join('')}
           </div>
         </div>
+        ${visible.length===0?`<div class="gantt-empty">Nessuna task con data inizio e scadenza nel periodo.<br>Usa ⋯ sulle card per aggiungere le date.</div>`:rows}
       </div>
-      ${visible.length===0?`<div class="gantt-empty">Nessuna task con data inizio e scadenza nel periodo selezionato.<br>Aggiungi le date nelle card tramite ⋯.</div>`:''}
-      ${visible.map(c=>{
-        const o=ownerById(c.owner);
-        const bs=barStyle(c);
-        const od=isOverdue(c.due)&&c.col!=='done';
-        return`<div class="gantt-row">
-          <div class="gantt-task-label">
-            <div class="gantt-task-name" title="${c.title}">${c.title}</div>
-            <div class="gantt-task-meta">
-              <div class="mini-av" style="background:${o.bg};color:${o.color};width:16px;height:16px;font-size:7px">${o.initials}</div>
-              ${c.tags.slice(0,2).map(t=>{const tg=tagById(t);if(!tg)return'';const cs=tagCss(tg.color);return`<span class="tag" style="background:${cs.bg};color:${cs.text};padding:1px 5px;font-size:10px">${tg.label}</span>`;}).join('')}
-            </div>
-          </div>
-          <div class="gantt-track" style="width:${totalDays*DAY_W}px;overflow:hidden;position:relative">
-            ${days.map((d,i)=>`<div class="gantt-day-col${d.isWeekend?' weekend':''}${d.isToday?' today-col':''}" style="left:${i*DAY_W}px;width:${DAY_W}px"></div>`).join('')}
-            ${todayOffset>=0?`<div class="gantt-today-line" style="left:${todayOffset}px"></div>`:''}
-            <div class="gantt-bar${c.col==='done'?' done-bar':''}"
-              style="left:${bs.left+2}px;width:${bs.width}px;background:${bs.color}"
-              onclick="openEdit('${c.id}')"
-              title="${c.title} · ${fmt(c.start)} → ${fmt(c.due)}">
-              ${bs.width>60?c.title:''}
-            </div>
-          </div>
-        </div>`;
-      }).join('')}
     </div>
   </div>`;
 }
 
 function buildModal(){
-  const m=S.modal;
-  const isEdit=m.mode==='edit';
-  const d=S.draft;
-  return`<div class="modal-bg" id="modal-bg">
-    <div class="modal">
-      <div class="modal-title">${isEdit?'Modifica card':'Nuova card'}</div>
-      <div class="form-group">
-        <label class="form-label">Titolo</label>
-        <input class="form-input" id="f-title" type="text" value="${d.title}" placeholder="Nome del task...">
-      </div>
-      <div class="form-row-2">
-        <div class="form-group">
-          <label class="form-label">Colonna</label>
-          <select class="form-input" id="f-col">
-            ${COLS.map(col=>`<option value="${col.id}"${d.col===col.id?' selected':''}>${col.title}</option>`).join('')}
-          </select>
-        </div>
-        <div class="form-group">
-          <label class="form-label">Owner</label>
-          <select class="form-input" id="f-owner">
-            ${S.owners.map(o=>`<option value="${o.id}"${d.owner===o.id?' selected':''}>${o.name}</option>`).join('')}
-          </select>
-        </div>
-      </div>
-      <div class="form-row-2">
-        <div class="form-group">
-          <label class="form-label">Data inizio</label>
-          <input class="form-input" id="f-start" type="date" value="${d.start||''}">
-        </div>
-        <div class="form-group">
-          <label class="form-label">Scadenza</label>
-          <input class="form-input" id="f-due" type="date" value="${d.due||''}">
-        </div>
-      </div>
-      <div class="form-group">
-        <label class="form-label">Tag</label>
-        <div class="tag-picker">
-          ${TAGS.map(t=>{const cs=tagCss(t.color);return`<div class="tag-opt${d.tags.includes(t.id)?' sel':''}" data-tag="${t.id}" style="background:${cs.bg};color:${cs.text}">${t.label}</div>`;}).join('')}
-        </div>
-      </div>
-      <div class="form-group">
-        <label class="form-label">Subtask</label>
-        ${d.subtasks.map(s=>`<div class="modal-sub-item">
-          <div class="modal-sub-check${s.done?' done':''}" data-sid="${s.id}">${s.done?'✓':''}</div>
-          <span class="modal-sub-text">${s.text}</span>
-          <button class="modal-sub-del" data-delsub="${s.id}">✕</button>
-        </div>`).join('')}
-        <div class="sub-input-row">
-          <input id="sub-input" type="text" placeholder="Aggiungi subtask...">
-          <button id="sub-add-btn">+</button>
-        </div>
-      </div>
-      <div class="modal-actions">
-        ${isEdit?`<button class="btn btn-danger" id="del-btn">Elimina</button>`:''}
-        <button class="btn" id="cancel-btn">Annulla</button>
-        <button class="btn btn-primary" id="save-btn">${isEdit?'Salva':'Crea card'}</button>
-      </div>
+  const isEdit=S.modal.mode==='edit',d=S.draft;
+  const others=S.cards.filter(c=>c.id!==d.id);
+  return`<div class="modal-bg" id="modal-bg"><div class="modal">
+    <div class="modal-title">${isEdit?'Modifica card':'Nuova card'}</div>
+    <div class="form-group"><label class="form-label">Titolo</label><input class="form-input" id="f-title" type="text" value="${d.title}" placeholder="Nome del task..."></div>
+    <div class="form-row-2">
+      <div class="form-group"><label class="form-label">Colonna</label><select class="form-input" id="f-col">${COLS.map(c=>`<option value="${c.id}"${d.col===c.id?' selected':''}>${c.title}</option>`).join('')}</select></div>
+      <div class="form-group"><label class="form-label">Owner</label><select class="form-input" id="f-owner">${S.owners.map(o=>`<option value="${o.id}"${d.owner===o.id?' selected':''}>${o.name}</option>`).join('')}</select></div>
     </div>
-  </div>`;
+    <div class="form-row-2">
+      <div class="form-group"><label class="form-label">Data inizio</label><input class="form-input" id="f-start" type="date" value="${d.start||''}"></div>
+      <div class="form-group"><label class="form-label">Scadenza</label><input class="form-input" id="f-due" type="date" value="${d.due||''}"></div>
+    </div>
+    <div class="form-group"><label class="form-label">Dipende da</label>
+      <select class="form-input" id="f-dep"><option value="">— nessuna dipendenza —</option>${others.map(c=>`<option value="${c.id}"${d.dependsOn===c.id?' selected':''}>${c.title}</option>`).join('')}</select>
+    </div>
+    <div class="form-group"><label class="form-label">Tag</label><div class="tag-picker">${TAGS.map(t=>{const cs=tagCss(t.color);return`<div class="tag-opt${d.tags.includes(t.id)?' sel':''}" data-tag="${t.id}" style="background:${cs.bg};color:${cs.text}">${t.label}</div>`}).join('')}</div></div>
+    <div class="form-group"><label class="form-label">Subtask</label>
+      ${d.subtasks.map(s=>`<div class="modal-sub-item">
+        <div class="modal-sub-check${s.done?' done':''}" data-sid="${s.id}">${s.done?'✓':''}</div>
+        <span class="modal-sub-text">${s.text}</span>
+        <div class="modal-sub-dates"><input type="date" class="ssi" data-sid="${s.id}" value="${s.start||''}" title="Inizio"><span style="font-size:10px;color:#bbb">→</span><input type="date" class="sdi" data-sid="${s.id}" value="${s.due||''}" title="Fine"></div>
+        <button class="modal-sub-del" data-delsub="${s.id}">✕</button>
+      </div>`).join('')}
+      <div class="sub-input-row"><input id="sub-input" type="text" placeholder="Aggiungi subtask..."><button id="sub-add-btn">+</button></div>
+    </div>
+    <div class="modal-actions">
+      ${isEdit?`<button class="btn btn-danger" id="del-btn">Elimina</button>`:''}
+      <button class="btn" id="cancel-btn">Annulla</button>
+      <button class="btn btn-primary" id="save-btn">${isEdit?'Salva':'Crea card'}</button>
+    </div>
+  </div></div>`;
 }
 
 function buildSettings(){
   const cfg=getCfg();
   return`<div class="settings-section">
     <h2>Configurazione Airtable</h2>
-    <p>Per salvare i dati in modo condiviso, collegati ad Airtable (gratuito). <a href="https://airtable.com" target="_blank" style="color:var(--purple)">Crea account →</a></p>
-    <div class="form-group">
-      <label class="form-label">Personal Access Token</label>
-      <div class="settings-input-row"><input id="cfg-token" class="form-input" type="password" placeholder="patXXXXXXXX..." value="${cfg.token||''}"></div>
+    <p>I dati vengono sincronizzati per tutto il team. <a href="https://airtable.com" target="_blank" style="color:var(--purple)">Crea account →</a></p>
+    <div class="form-group"><label class="form-label">Personal Access Token</label>
+      <div class="si-row"><input id="cfg-token" class="form-input" type="password" placeholder="patXXXXXXXX..." value="${cfg.token||''}"></div>
       <p style="font-size:11px;color:#aaa;margin-top:3px">airtable.com → Account → Personal access tokens (scope: data.records:read, data.records:write)</p>
     </div>
-    <div class="form-group">
-      <label class="form-label">Base ID</label>
-      <div class="settings-input-row"><input id="cfg-base" class="form-input" type="text" placeholder="appXXXXXXXXXXXXXX" value="${cfg.baseId||''}"></div>
-      <p style="font-size:11px;color:#aaa;margin-top:3px">airtable.com → la tua base → Help → API documentation → Base ID in cima</p>
+    <div class="form-group"><label class="form-label">Base ID</label>
+      <div class="si-row"><input id="cfg-base" class="form-input" type="text" placeholder="appXXXXXXXXXXXXXX" value="${cfg.baseId||''}"></div>
     </div>
-    <div class="form-group">
-      <label class="form-label">Nome tabella</label>
-      <div class="settings-input-row"><input id="cfg-table" class="form-input" type="text" placeholder="Tasks" value="${cfg.tableName||'Tasks'}"></div>
-      <p style="font-size:11px;color:#aaa;margin-top:3px">Campi richiesti: <code>Title</code>, <code>Column</code>, <code>Owner</code>, <code>Start</code>, <code>Due</code>, <code>Tags</code>, <code>Subtasks</code> (tutti testo)</p>
+    <div class="form-group"><label class="form-label">Nome tabella task</label>
+      <div class="si-row"><input id="cfg-table" class="form-input" type="text" placeholder="Tasks" value="${cfg.tableName||'Tasks'}"></div>
+      <p style="font-size:11px;color:#aaa;margin-top:3px">
+        Campi tabella Tasks: <code>Title</code> <code>Column</code> <code>Owner</code> <code>Start</code> <code>Due</code> <code>Tags</code> <code>Subtasks</code> <code>DependsOn</code> (tutti testo)<br>
+        Crea anche una tabella <code>Settings</code> con campi <code>Key</code> e <code>Value</code> — sincronizza nomi team e tag per tutti.
+      </p>
     </div>
-    <h2 style="margin-top:24px">Nomi del team</h2>
-    ${S.owners.map((o,i)=>`<div class="form-group" style="margin-bottom:8px">
-      <label class="form-label">Membro ${i+1}</label>
-      <input class="form-input" type="text" id="owner-name-${o.id}" value="${o.name}" placeholder="Nome...">
-    </div>`).join('')}
-    <div style="display:flex;gap:8px;margin-top:20px">
-      <button class="btn btn-primary" id="save-cfg-btn">Salva configurazione</button>
-      ${isConfigured()?`<button class="btn" id="back-btn">← Torna al board</button>`:''}
-    </div>
-    <h2 style="margin-top:28px">Tag personalizzati</h2>
-    <p>Aggiungi, rinomina o elimina i tag. Le modifiche si applicano subito a tutti.</p>
+    <h2 style="margin-top:22px">Nomi del team</h2>
+    <p>Salvati su Airtable → visibili a tutti automaticamente al login.</p>
+    ${S.owners.map((o,i)=>`<div class="form-group" style="margin-bottom:8px"><label class="form-label">Membro ${i+1}</label><input class="form-input" type="text" id="owner-name-${o.id}" value="${o.name}" placeholder="Nome..."></div>`).join('')}
+    <h2 style="margin-top:22px">Tag personalizzati</h2>
+    <p>Salvati su Airtable → visibili a tutti automaticamente.</p>
     <div id="tags-list">
-      ${TAGS.map((t,i)=>`<div class="tag-edit-row" style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
-        <input class="form-input tag-label-inp" data-ti="${i}" type="text" value="${t.label}" style="flex:1" placeholder="Nome tag">
+      ${TAGS.map((t,i)=>`<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+        <input class="form-input tag-label-inp" data-ti="${i}" type="text" value="${t.label}" style="flex:1">
         <input class="form-input tag-color-inp" data-ti="${i}" type="color" value="${t.color}" style="width:42px;height:38px;padding:2px 4px;cursor:pointer">
-        <button class="btn btn-sm btn-danger tag-del-btn" data-ti="${i}" style="flex-shrink:0">✕</button>
+        <button class="btn btn-sm btn-danger tag-del-btn" data-ti="${i}">✕</button>
       </div>`).join('')}
     </div>
-    <button class="btn btn-sm" id="add-tag-btn" style="margin-bottom:4px">+ Aggiungi tag</button>
-
+    <button class="btn btn-sm" id="add-tag-btn" style="margin-bottom:20px">+ Aggiungi tag</button>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-primary" id="save-cfg-btn">Salva e sincronizza</button>
+      ${isConfigured()?`<button class="btn" id="back-btn">← Torna al board</button>`:''}
+    </div>
     <div style="margin-top:28px;padding-top:20px;border-top:1px solid #eee">
       <h2>Come aggiungere in Teams</h2>
-      <p>1. Carica questo file su <strong>GitHub Pages</strong> come <code>index.html</code></p>
-      <p>2. In Teams → canale → <strong>+</strong> → cerca <strong>"Sito web"</strong></p>
-      <p>3. Incolla l'URL GitHub Pages → Salva</p>
-      <p style="margin-top:8px;color:#aaa;font-size:12px">Nuovo campo Airtable da aggiungere: <code>Start</code> (testo) — necessario per la vista Gantt.</p>
+      <p>1. Carica il file su <strong>GitHub Pages</strong> come <code>index.html</code></p>
+      <p>2. Teams → canale → <strong>+</strong> → <strong>Sito web</strong> → incolla URL → Salva</p>
+      <p>3. Ogni membro inserisce solo token e Base ID una volta — nomi e tag si scaricano da Airtable automaticamente.</p>
     </div>
   </div>`;
 }
 
-// ── Events ─────────────────────────────────────────────────────────────────
 function bindEvents(){
-  // drag & drop (kanban only)
   document.querySelectorAll('.card[draggable]').forEach(el=>{
-    el.addEventListener('dragstart',e=>{
-      dragSrcId=el.dataset.id;
-      setTimeout(()=>el.classList.add('dragging'),0);
-      e.dataTransfer.effectAllowed='move';
-    });
-    el.addEventListener('dragend',()=>{
-      document.querySelectorAll('.card').forEach(c=>c.classList.remove('dragging'));
-      dragSrcId=null;
-    });
+    el.addEventListener('dragstart',e=>{dragSrcId=el.dataset.id;setTimeout(()=>el.classList.add('dragging'),0);e.dataTransfer.effectAllowed='move'});
+    el.addEventListener('dragend',()=>{document.querySelectorAll('.card').forEach(c=>c.classList.remove('dragging'));dragSrcId=null});
   });
   document.querySelectorAll('.col-body').forEach(col=>{
     const colId=col.dataset.col;
-    col.addEventListener('dragover',e=>{e.preventDefault();document.querySelectorAll('.col-body').forEach(c=>c.classList.remove('drag-over'));col.classList.add('drag-over');});
+    col.addEventListener('dragover',e=>{e.preventDefault();document.querySelectorAll('.col-body').forEach(c=>c.classList.remove('drag-over'));col.classList.add('drag-over')});
     col.addEventListener('dragleave',()=>col.classList.remove('drag-over'));
     col.addEventListener('drop',async e=>{
-      e.preventDefault();col.classList.remove('drag-over');
-      if(!dragSrcId)return;
+      e.preventDefault();col.classList.remove('drag-over');if(!dragSrcId)return;
       const card=S.cards.find(c=>c.id===dragSrcId);
       if(card&&card.col!==colId){card.col=colId;render();try{await updateCard(card.id,card)}catch(err){toast('Errore: '+err.message)}}
       dragSrcId=null;
     });
   });
-
-  // subtask toggle on board
   document.querySelectorAll('.sub-check[data-cid]').forEach(el=>{
     el.addEventListener('click',async()=>{
-      const card=S.cards.find(c=>c.id===el.dataset.cid);
-      const sub=card?.subtasks.find(s=>s.id===el.dataset.sid);
-      if(!sub)return;
-      sub.done=!sub.done;render();
-      try{await updateCard(card.id,card)}catch(err){toast('Errore: '+err.message)}
+      const card=S.cards.find(c=>c.id===el.dataset.cid),sub=card?.subtasks.find(s=>s.id===el.dataset.sid);
+      if(!sub)return;sub.done=!sub.done;render();try{await updateCard(card.id,card)}catch(err){toast('Errore: '+err.message)}
     });
   });
-
-  // modal
   const bg=document.getElementById('modal-bg');
   if(bg)bg.addEventListener('click',e=>{if(e.target===bg){S.modal=null;S.draft=null;render()}});
   bind('cancel-btn','click',()=>{S.modal=null;S.draft=null;render()});
@@ -650,7 +530,6 @@ function bindEvents(){
   bind('del-btn','click',async()=>{if(confirm('Eliminare questa card?'))await deleteCard(S.modal.id)});
   bind('sub-add-btn','click',addSubtask);
   bind('sub-input','keydown',e=>{if(e.key==='Enter')addSubtask()});
-
   document.querySelectorAll('.tag-opt[data-tag]').forEach(el=>{
     el.addEventListener('click',()=>{
       const t=el.dataset.tag;
@@ -665,93 +544,67 @@ function bindEvents(){
   document.querySelectorAll('[data-delsub]').forEach(el=>{
     el.addEventListener('click',()=>{S.draft.subtasks=S.draft.subtasks.filter(s=>s.id!==el.dataset.delsub);render()});
   });
-
-  // settings
-  bind('save-cfg-btn','click',()=>{
+  document.querySelectorAll('.ssi').forEach(el=>{el.addEventListener('change',()=>{const sub=S.draft.subtasks.find(s=>s.id===el.dataset.sid);if(sub)sub.start=el.value})});
+  document.querySelectorAll('.sdi').forEach(el=>{el.addEventListener('change',()=>{const sub=S.draft.subtasks.find(s=>s.id===el.dataset.sid);if(sub)sub.due=el.value})});
+  bind('save-cfg-btn','click',async()=>{
     const token=document.getElementById('cfg-token')?.value.trim();
     const baseId=document.getElementById('cfg-base')?.value.trim();
     const tableName=document.getElementById('cfg-table')?.value.trim()||'Tasks';
     saveCfg({token,baseId,tableName});
     S.owners.forEach(o=>{const el=document.getElementById('owner-name-'+o.id);if(el)o.name=el.value.trim()||o.name});
+    document.querySelectorAll('.tag-label-inp').forEach(el=>{const i=+el.dataset.ti;if(TAGS[i])TAGS[i].label=el.value});
+    document.querySelectorAll('.tag-color-inp').forEach(el=>{const i=+el.dataset.ti;if(TAGS[i])TAGS[i].color=el.value});
     localStorage.setItem('tf_owners',JSON.stringify(S.owners));
-    toast('Configurazione salvata!');S.view='board';fetchCards();
+    localStorage.setItem('tf_tags',JSON.stringify(TAGS));
+    toast('Salvo e sincronizzo...');
+    await pushSettings();
+    toast('Salvato e sincronizzato ✓');
+    S.view='board';fetchCards();
   });
   bind('back-btn','click',()=>{S.view='board';render()});
-
-  // tag management in settings
-  bind('add-tag-btn','click',()=>{
-    TAGS=[...TAGS,{id:uid(),label:'nuovo tag',color:'#888780'}];
-    saveTags();render();
-    setTimeout(()=>{
-      const inputs=document.querySelectorAll('.tag-label-inp');
-      if(inputs.length)inputs[inputs.length-1].select();
-    },50);
-  });
-  document.querySelectorAll('.tag-label-inp').forEach(el=>{
-    el.addEventListener('input',()=>{const i=+el.dataset.ti;TAGS[i].label=el.value;saveTags();});
-  });
-  document.querySelectorAll('.tag-color-inp').forEach(el=>{
-    el.addEventListener('input',()=>{const i=+el.dataset.ti;TAGS[i].color=el.value;saveTags();});
-  });
-  document.querySelectorAll('.tag-del-btn').forEach(el=>{
-    el.addEventListener('click',()=>{
-      const i=+el.dataset.ti;
-      if(TAGS.length<=1){toast('Mantieni almeno un tag');return;}
-      TAGS=TAGS.filter((_,idx)=>idx!==i);
-      saveTags();render();
-    });
-  });
+  bind('add-tag-btn','click',()=>{TAGS=[...TAGS,{id:uid(),label:'nuovo tag',color:'#888780'}];render();setTimeout(()=>{const ins=document.querySelectorAll('.tag-label-inp');if(ins.length)ins[ins.length-1].select()},50)});
+  document.querySelectorAll('.tag-label-inp').forEach(el=>{el.addEventListener('input',()=>{const i=+el.dataset.ti;if(TAGS[i])TAGS[i].label=el.value})});
+  document.querySelectorAll('.tag-color-inp').forEach(el=>{el.addEventListener('input',()=>{const i=+el.dataset.ti;if(TAGS[i])TAGS[i].color=el.value})});
+  document.querySelectorAll('.tag-del-btn').forEach(el=>{el.addEventListener('click',()=>{if(TAGS.length<=1){toast('Mantieni almeno un tag');return;}TAGS=TAGS.filter((_,i)=>i!==+el.dataset.ti);render()})});
 }
 
-function bind(id,ev,fn){const el=document.getElementById(id);if(el)el.addEventListener(ev,fn)}
-
 function addSubtask(){
-  const inp=document.getElementById('sub-input');
-  const txt=inp?.value.trim();
+  const inp=document.getElementById('sub-input'),txt=inp?.value.trim();
   if(!txt)return;
-  S.draft.subtasks=[...S.draft.subtasks,{id:uid(),text:txt,done:false}];
-  render();
-  setTimeout(()=>{const i=document.getElementById('sub-input');if(i)i.focus()},50);
+  S.draft.subtasks=[...S.draft.subtasks,{id:uid(),text:txt,done:false,start:'',due:''}];
+  render();setTimeout(()=>{const i=document.getElementById('sub-input');if(i)i.focus()},50);
 }
 
 async function handleSave(){
   const title=document.getElementById('f-title')?.value.trim();
   if(!title){toast('Inserisci un titolo');return;}
+  document.querySelectorAll('.ssi').forEach(el=>{const sub=S.draft.subtasks.find(s=>s.id===el.dataset.sid);if(sub)sub.start=el.value});
+  document.querySelectorAll('.sdi').forEach(el=>{const sub=S.draft.subtasks.find(s=>s.id===el.dataset.sid);if(sub)sub.due=el.value});
   S.draft.title=title;
   S.draft.col=document.getElementById('f-col')?.value||S.draft.col;
   S.draft.owner=document.getElementById('f-owner')?.value||S.draft.owner;
   S.draft.start=document.getElementById('f-start')?.value||'';
   S.draft.due=document.getElementById('f-due')?.value||'';
+  S.draft.dependsOn=document.getElementById('f-dep')?.value||'';
   const isEdit=S.modal&&S.modal.mode==='edit';
   const copy={...S.draft,subtasks:[...(S.draft.subtasks||[])]};
   const copyId=S.draft.id;
   S.modal=null;S.draft=null;
-  try{
-    if(isEdit)await updateCard(copyId,copy);
-    else await createCard(copy);
-  }catch(e){toast('Errore: '+e.message);render();}
+  try{if(isEdit)await updateCard(copyId,copy);else await createCard(copy);}
+  catch(e){toast('Errore: '+e.message);render();}
 }
 
-function openNew(col){
-  S.draft={col:col||'todo',title:'',tags:[],owner:S.owners[0].id,due:'',start:'',subtasks:[]};
-  S.modal={mode:'new'};render();
-  setTimeout(()=>document.getElementById('f-title')?.focus(),50);
-}
-function openEdit(id){
-  const card=S.cards.find(c=>c.id===id);
-  if(!card)return;
-  S.draft={...card,subtasks:[...card.subtasks.map(s=>({...s}))]};
-  S.modal={mode:'edit',id};render();
-  setTimeout(()=>document.getElementById('f-title')?.focus(),50);
-}
+function openNew(col){S.draft={col:col||'todo',title:'',tags:[],owner:S.owners[0].id,due:'',start:'',subtasks:[],dependsOn:''};S.modal={mode:'new'};render();setTimeout(()=>document.getElementById('f-title')?.focus(),50)}
+function openEdit(id){const card=S.cards.find(c=>c.id===id);if(!card)return;S.draft={...card,subtasks:card.subtasks.map(s=>({...s}))};S.modal={mode:'edit',id};render();setTimeout(()=>document.getElementById('f-title')?.focus(),50)}
 function toggleExp(id){S.expanded[id]=!S.expanded[id];render()}
+function toggleGanttExp(id){S.ganttExp[id]=!S.ganttExp[id];render()}
 function setView(v){S.view=v;render()}
 
-// boot
-const savedOwners=localStorage.getItem('tf_owners');
-if(savedOwners){try{S.owners=JSON.parse(savedOwners)}catch{}}
-loadTags();
-fetchCards();
+const _so=localStorage.getItem('tf_owners');if(_so){try{S.owners=JSON.parse(_so)}catch{}}
+const _st=localStorage.getItem('tf_tags');if(_st){try{TAGS=JSON.parse(_st)}catch{}}
+
+async function boot(){await fetchSettings();await fetchCards()}
+boot();
 </script>
 </body>
 </html>
