@@ -221,7 +221,8 @@ function bind(id,ev,fn){const el=document.getElementById(id);if(el)el.addEventLi
 function subField(f){return f.Subtasks||f.subtasks||f.Subtask||f.subtask||''}
 function toFields(d){
   return{Title:d.title,Column:d.col,Owner:d.owner,Due:d.due||'',Start:d.start||'',
-    Tags:(d.tags||[]).join(','),Subtasks:JSON.stringify(d.subtasks||[]),DependsOn:d.dependsOn||''};
+    Tags:(d.tags||[]).join(','),Subtasks:JSON.stringify(d.subtasks||[]),DependsOn:d.dependsOn||'',
+    Notes:JSON.stringify(d.notes||[])};
 }
 
 async function fetchCards(){
@@ -241,7 +242,8 @@ async function fetchCards(){
       return{id:rec.id,title:rec.fields.Title||'',col:rec.fields.Column||'todo',
         owner:rec.fields.Owner||'owner1',due:rec.fields.Due||'',start:rec.fields.Start||'',
         tags:(rec.fields.Tags||'').split(',').filter(Boolean),subtasks:subs,
-        dependsOn:rec.fields.DependsOn||''};
+        dependsOn:rec.fields.DependsOn||'',
+        notes:rec.fields.Notes?JSON.parse(rec.fields.Notes):[]};
     });
     S.error=null;
   }catch(e){S.error=e.message}
@@ -357,6 +359,7 @@ function buildCard(c){
     <div class="card-top"><div class="card-title">${c.title}</div><button class="card-edit" onclick="openEdit('${c.id}')">⋯</button></div>
     ${c.tags.length?`<div class="tags">${c.tags.map(t=>{const tg=tagById(t);if(!tg)return'';const cs=tagCss(tg.color);return`<span class="tag" style="background:${cs.bg};color:${cs.text}">${tg.label}</span>`}).join('')}</div>`:''}
     ${dep?`<div class="dep-badge${depBlocked?' blocked':''}" title="${dep.title}">⟶ ${dep.title.length>24?dep.title.slice(0,24)+'…':dep.title}</div>`:''}
+    ${c.notes&&c.notes.length?`<div style="font-size:11px;color:#888;margin-bottom:6px;display:flex;align-items:center;gap:4px"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><rect x="1" y="1" width="10" height="10" rx="2" stroke="currentColor" stroke-width="1.2"/><line x1="3" y1="4" x2="9" y2="4" stroke="currentColor" stroke-width="1"/><line x1="3" y1="6.5" x2="9" y2="6.5" stroke="currentColor" stroke-width="1"/><line x1="3" y1="9" x2="7" y2="9" stroke="currentColor" stroke-width="1"/></svg>${c.notes.length} ${c.notes.length===1?'nota':'note'}</div>`:''}`
     ${ratio!==null?`<div class="sub-bar"><div class="sub-track"><div class="sub-fill" style="width:${pct}%"></div></div>
       <div class="sub-meta"><div class="sub-label">${ratio.d}/${ratio.t} subtask</div>
         <button class="expand-btn" onclick="toggleExp('${c.id}')"><svg width="9" height="9" viewBox="0 0 9 9" style="transition:transform .2s;transform:rotate(${exp?90:0}deg)"><path d="M2.5 1.5l4 3-4 3" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>${exp?'nascondi':'mostra'}</button>
@@ -466,6 +469,20 @@ function buildModal(){
         <button class="modal-sub-del" data-delsub="${s.id}">✕</button>
       </div>`).join('')}
       <div class="sub-input-row"><input id="sub-input" type="text" placeholder="Aggiungi subtask..."><button id="sub-add-btn">+</button></div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Note</label>
+      <div id="notes-list" style="margin-bottom:8px">
+        ${(d.notes||[]).slice().reverse().map(n=>`<div style="background:#F7F6F2;border-radius:8px;padding:8px 10px;margin-bottom:6px;position:relative">
+          <div style="font-size:10px;color:#aaa;margin-bottom:4px;display:flex;justify-content:space-between;align-items:center">
+            <span>📅 ${n.date}</span>
+            <button style="border:none;background:none;cursor:pointer;color:#ccc;font-size:12px;padding:0 2px" data-delnote="${n.id}">✕</button>
+          </div>
+          <div style="font-size:12px;color:#444;white-space:pre-wrap;line-height:1.5">${n.text}</div>
+        </div>`).join('')}
+      </div>
+      <textarea id="note-input" class="form-input" rows="2" placeholder="Scrivi una nota..." style="resize:vertical;min-height:60px"></textarea>
+      <button class="btn btn-sm" id="note-add-btn" style="margin-top:6px">+ Aggiungi nota</button>
     </div>
     <div class="modal-actions">
       ${isEdit?`<button class="btn btn-danger" id="del-btn">Elimina</button>`:''}
@@ -613,7 +630,19 @@ async function handleSave(){
   catch(e){toast('Errore: '+e.message);render();}
 }
 
-function openNew(col){S.draft={col:col||'todo',title:'',tags:[],owner:S.owners[0].id,due:'',start:'',subtasks:[],dependsOn:''};S.modal={mode:'new'};render();setTimeout(()=>document.getElementById('f-title')?.focus(),50)}
+function addNote(){
+  const inp=document.getElementById('note-input');
+  const txt=inp&&inp.value.trim();
+  if(!txt)return;
+  const now=new Date();
+  const dateStr=now.toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit',year:'numeric'})+' '+now.toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'});
+  if(!S.draft.notes)S.draft.notes=[];
+  S.draft.notes.push({id:uid(),text:txt,date:dateStr});
+  render();
+  setTimeout(()=>{const i=document.getElementById('note-input');if(i)i.focus()},50);
+}
+
+function openNew(col){S.draft={col:col||'todo',title:'',tags:[],owner:S.owners[0].id,due:'',start:'',subtasks:[],dependsOn:'',notes:[]};S.modal={mode:'new'};render();setTimeout(()=>document.getElementById('f-title')?.focus(),50)}
 function openEdit(id){const card=S.cards.find(c=>c.id===id);if(!card)return;S.draft={...card,subtasks:card.subtasks.map(s=>({...s}))};S.modal={mode:'edit',id};render();setTimeout(()=>document.getElementById('f-title')?.focus(),50)}
 function toggleExp(id){S.expanded[id]=!S.expanded[id];render()}
 function toggleGanttExp(id){S.ganttExp[id]=!S.ganttExp[id];render()}
