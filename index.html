@@ -173,9 +173,9 @@ const DEFAULT_TAGS=[
 ];
 let TAGS=[...DEFAULT_TAGS];
 const DEFAULT_OWNERS=[
-  {id:'owner1',name:'Arianna',   initials:'AZ',color:'#534AB7',bg:'#EEEDFE'},
-  {id:'owner2',name:'Luca', initials:'LM',color:'#185FA5',bg:'#E6F1FB'},
-  {id:'owner3',name:'Lorenzo',initials:'LP',color:'#0F6E56',bg:'#E1F5EE'},
+  {id:'owner1',name:'Tu',   initials:'TU',color:'#534AB7',bg:'#EEEDFE'},
+  {id:'owner2',name:'Anna', initials:'AN',color:'#185FA5',bg:'#E6F1FB'},
+  {id:'owner3',name:'Beppe',initials:'BE',color:'#0F6E56',bg:'#E1F5EE'},
 ];
 
 function getCfg(){try{return JSON.parse(localStorage.getItem('tf_cfg')||'{}')}catch{return{}}}
@@ -193,6 +193,22 @@ function addDays(d,n){const dt=new Date(d);dt.setDate(dt.getDate()+n);return dt.
 function diffDays(a,b){return Math.round((new Date(b)-new Date(a))/86400000)}
 function fmt(d){if(!d)return'';const p=d.split('-');return p[2]+'/'+p[1]}
 function isOverdue(d){if(!d)return false;return new Date(d)<new Date(new Date().toDateString())}
+function sortCardsByDue(cards){
+  const today=new Date(new Date().toDateString());
+  return [...cards].sort((a,b)=>{
+    const hasDueA=!!a.due,hasDueB=!!b.due;
+    if(!hasDueA&&!hasDueB)return 0;
+    if(!hasDueA)return 1;
+    if(!hasDueB)return -1;
+    const dA=new Date(a.due),dB=new Date(b.due);
+    const odA=dA<today,odB=dB<today;
+    // overdue first (oldest first), then future (nearest first), then no date
+    if(odA&&odB)return dA-dB;
+    if(odA)return -1;
+    if(odB)return 1;
+    return dA-dB;
+  });
+}
 function ownerById(id){return S.owners.find(o=>o.id===id)||S.owners[0]}
 function tagById(id){return TAGS.find(t=>t.id===id)}
 function tagCss(color){const r=parseInt(color.slice(1,3),16),g=parseInt(color.slice(3,5),16),b=parseInt(color.slice(5,7),16);return{bg:`rgba(${r},${g},${b},0.13)`,text:color}}
@@ -327,7 +343,7 @@ function buildBoard(total,done,overdue,inprog){
   <div class="board">
     ${COLS.map(col=>`<div class="col">
       <div class="col-head"><div class="col-dot" style="background:${col.color}"></div><div class="col-title">${col.title}</div><div class="col-count">${S.cards.filter(c=>c.col===col.id).length}</div></div>
-      <div class="col-body" id="col-${col.id}" data-col="${col.id}">${S.cards.filter(c=>c.col===col.id).map(c=>buildCard(c)).join('')}</div>
+      <div class="col-body" id="col-${col.id}" data-col="${col.id}">${sortCardsByDue(S.cards.filter(c=>c.col===col.id)).map(c=>buildCard(c)).join('')}</div>
       <button class="add-card-btn" onclick="openNew('${col.id}')">+ aggiungi</button>
     </div>`).join('')}
   </div>`;
@@ -350,7 +366,10 @@ function buildCard(c){
       </div></div>`:''}
     <div class="card-footer">
       <div class="owner-chip"><div class="mini-av" style="background:${o.bg};color:${o.color}">${o.initials}</div>${o.name}</div>
-      ${c.due?`<div class="date-chip${od?' date-overdue':''}">${od?'▲ ':''}${fmt(c.due)}</div>`:''}
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px">
+        ${c.start?`<div style="font-size:10px;color:#aaa">▶ ${fmt(c.start)}</div>`:''}
+        ${c.due?`<div class="date-chip${od?' date-overdue':''}">${od?'▲ ':''}${fmt(c.due)}</div>`:''}
+      </div>
     </div>
   </div>`;
 }
