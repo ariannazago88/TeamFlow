@@ -566,6 +566,11 @@ function bindEvents(){
   bind('del-btn','click',async()=>{if(confirm('Eliminare questa card?'))await deleteCard(S.modal.id)});
   bind('sub-add-btn','click',addSubtask);
   bind('sub-input','keydown',e=>{if(e.key==='Enter')addSubtask()});
+  bind('note-add-btn','click',addNote);
+  bind('note-input','keydown',e=>{if(e.key==='Enter'&&e.ctrlKey)addNote()});
+  document.querySelectorAll('[data-delnote]').forEach(el=>{
+    el.addEventListener('click',()=>{S.draft.notes=(S.draft.notes||[]).filter(n=>n.id!==el.dataset.delnote);render()});
+  });
   document.querySelectorAll('.tag-opt[data-tag]').forEach(el=>{
     el.addEventListener('click',()=>{
       const t=el.dataset.tag;
