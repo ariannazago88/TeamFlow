@@ -220,9 +220,12 @@ function bind(id,ev,fn){const el=document.getElementById(id);if(el)el.addEventLi
 
 function subField(f){return f.Subtasks||f.subtasks||f.Subtask||f.subtask||''}
 function toFields(d){
-  return{Title:d.title,Column:d.col,Owner:d.owner,Due:d.due||'',Start:d.start||'',
-    Tags:(d.tags||[]).join(','),Subtasks:JSON.stringify(d.subtasks||[]),DependsOn:d.dependsOn||'',
-    Notes:JSON.stringify(d.notes||[])};
+  const f={Title:d.title,Column:d.col,Owner:d.owner,
+    Tags:(d.tags||[]).join(','),Subtasks:JSON.stringify(d.subtasks||[]),
+    DependsOn:d.dependsOn||'',Notes:JSON.stringify(d.notes||[])};
+  if(d.due)f.Due=d.due; else f.Due=null;
+  if(d.start)f.Start=d.start; else f.Start=null;
+  return f;
 }
 
 async function fetchCards(){
@@ -328,6 +331,7 @@ function buildTopbar(){
       <div class="avatars">${S.owners.map(o=>`<div class="av" data-name="${o.name}" style="background:${o.bg};color:${o.color}">${o.initials}</div>`).join('')}</div>
       ${v!=='settings'?`<div class="view-toggle"><button class="view-btn${v==='board'?' active':''}" onclick="setView('board')">Kanban</button><button class="view-btn${v==='gantt'?' active':''}" onclick="setView('gantt')">Gantt</button></div>`:''}
       ${isConfigured()?`<button class="btn btn-sm btn-ghost" onclick="boot()" title="Aggiorna">↻</button>`:''}
+      ${v!=='settings'&&isConfigured()?`<button class="btn btn-sm btn-ghost" onclick="downloadExcel()" title="Scarica Excel">⬇ Excel</button><label class="btn btn-sm btn-ghost" title="Importa Excel" style="cursor:pointer">⬆ Importa<input type="file" accept=".xlsx" style="display:none" onchange="importExcel(this)"></label>`:''}
       <button class="btn btn-sm btn-ghost" onclick="setView('settings')">⚙</button>
       ${v!=='settings'&&isConfigured()?`<button class="btn btn-primary btn-sm" onclick="openNew()">+ Nuova card</button>`:''}
     </div>
@@ -380,61 +384,90 @@ function buildCard(c){
 function buildGantt(){
   if(S.loading)return`<div class="loading"><div class="spinner"></div> Carico...</div>`;
   const rs=S.ganttStart||todayStr(),re=S.ganttEnd||addDays(todayStr(),30);
-  const totalDays=diffDays(rs,re)+1,DAY_W=Math.max(22,Math.min(38,Math.floor(720/totalDays)));
+  const totalDays=diffDays(rs,re)+1;
+  // Responsive: fit all days into ~760px track width, min 4px, max 36px
+  const TRACK_W=760;
+  const DAY_W=Math.max(4,Math.min(36,Math.floor(TRACK_W/totalDays)));
+  const W=totalDays*DAY_W;
+  // For dense views (DAY_W < 10), only show month markers not individual days
+  const dense=DAY_W<10;
   const visible=S.cards.filter(c=>c.start&&c.due&&c.start<=re&&c.due>=rs);
   const usedTags=new Set(visible.flatMap(c=>c.tags));
+  const NM=['Gen','Feb','Mar','Apr','Mag','Giu','Lug','Ago','Set','Ott','Nov','Dic'];
 
   const days=[];
   for(let i=0;i<totalDays;i++){
     const d=addDays(rs,i),dt=new Date(d),dow=dt.getDay();
-    days.push({date:d,label:String(dt.getDate()),we:dow===0||dow===6,today:d===todayStr(),month:dt.getMonth(),year:dt.getFullYear()});
+    days.push({date:d,label:String(dt.getDate()),we:dow===0||dow===6,today:d===todayStr(),month:dt.getMonth(),year:dt.getFullYear(),dom:dt.getDate()});
   }
+  // Build month segments for header
   const months=[];
-  days.forEach((d,i)=>{if(i===0||days[i-1].month!==d.month){const nm=['Gen','Feb','Mar','Apr','Mag','Giu','Lug','Ago','Set','Ott','Nov','Dic'];months.push({label:nm[d.month]+' '+d.year,off:i*DAY_W})}});
+  days.forEach((d,i)=>{
+    if(i===0||days[i-1].month!==d.month){
+      const end=days.findIndex((x,j)=>j>i&&x.month!==d.month);
+      const segDays=end===-1?totalDays-i:end-i;
+      months.push({label:NM[d.month]+(dense?' '+d.year:''),off:i*DAY_W,w:segDays*DAY_W});
+    }
+  });
   const todayOff=(todayStr()>=rs&&todayStr()<=re)?diffDays(rs,todayStr())*DAY_W:-9999;
-  const W=totalDays*DAY_W;
 
-  function bp(s,e){const cs=s<rs?rs:s,ce=e>re?re:e;return{l:diffDays(rs,cs)*DAY_W,w:Math.max(DAY_W-2,(diffDays(cs,ce)+1)*DAY_W-2)}}
-  const grid=`${days.map((d,i)=>`<div class="g-col${d.we?' we':''}${d.today?' td':''}" style="left:${i*DAY_W}px;width:${DAY_W}px"></div>`).join('')}<div class="g-today" style="left:${todayOff}px"></div>`;
+  function bp(s,e){const cs=s<rs?rs:s,ce=e>re?re:e;return{l:diffDays(rs,cs)*DAY_W,w:Math.max(DAY_W,(diffDays(cs,ce)+1)*DAY_W-1)}}
+
+  // Grid background: alternating month stripes + today line
+  const monthStripes=months.map(m=>`<div style="position:absolute;top:0;bottom:0;left:${m.off}px;width:${m.w}px;background:${months.indexOf(m)%2===0?'transparent':'rgba(0,0,0,.02)'}"></div>`).join('');
+  // Week markers for medium density
+  const weekMarkers=(!dense&&DAY_W>=6)?days.filter(d=>new Date(d.date).getDay()===1).map(d=>`<div style="position:absolute;top:0;bottom:0;left:${days.indexOf(d)*DAY_W}px;width:1px;background:rgba(0,0,0,.04)"></div>`).join(''):'';
+  const todayLine=todayOff>=0?`<div style="position:absolute;top:0;bottom:0;left:${todayOff}px;width:2px;background:#534AB7;opacity:.25;z-index:2"></div>`:'';
+  const grid=monthStripes+weekMarkers+todayLine;
 
   const rows=visible.map(c=>{
     const color=tagBar(c.tags),{l,w}=bp(c.start,c.due),exp=S.ganttExp[c.id];
     const hasSubs=c.subtasks&&c.subtasks.some(s=>s.start&&s.due);
     const o=ownerById(c.owner);
     let html=`<div class="gantt-row task-row">
-      <div class="gantt-task-label">
-        <div class="gantt-task-name">${hasSubs?`<span class="g-expand" onclick="toggleGanttExp('${c.id}')">${exp?'▾':'▸'}</span>`:'<span style="width:19px;display:inline-block"></span>'}<span style="overflow:hidden;text-overflow:ellipsis">${c.title}</span></div>
+      <div class="gantt-task-label" onclick="${hasSubs?`toggleGanttExp('${c.id}')`:''}" style="${hasSubs?'cursor:pointer':''}">
+        <div class="gantt-task-name">${hasSubs?`<span class="g-expand">${exp?'▾':'▸'}</span>`:'<span style="width:16px;display:inline-block"></span>'}<span style="overflow:hidden;text-overflow:ellipsis">${c.title}</span></div>
         <div class="gantt-task-meta"><div class="mini-av" style="background:${o.bg};color:${o.color};width:15px;height:15px;font-size:7px">${o.initials}</div>${c.tags.slice(0,2).map(t=>{const tg=tagById(t);if(!tg)return'';const cs=tagCss(tg.color);return`<span class="tag" style="background:${cs.bg};color:${cs.text};padding:1px 5px;font-size:10px">${tg.label}</span>`}).join('')}</div>
       </div>
-      <div class="gantt-track" style="width:${W}px;height:44px">${grid}<div class="g-bar${c.col==='done'?' done-bar':''}" style="left:${l+1}px;width:${w}px;background:${color};height:20px" onclick="openEdit('${c.id}')" title="${c.title} ${fmt(c.start)}→${fmt(c.due)}">${w>55?c.title:''}</div></div>
+      <div class="gantt-track" style="width:${W}px;height:40px;position:relative;overflow:hidden">${grid}
+        <div class="g-bar${c.col==='done'?' done-bar':''}" style="left:${l+1}px;width:${w-2}px;height:18px;top:50%;transform:translateY(-50%);background:${color};border-radius:3px;position:absolute;cursor:pointer;display:flex;align-items:center;padding:0 5px;font-size:10px;font-weight:500;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" onclick="openEdit('${c.id}')" title="${c.title} ${fmt(c.start)}→${fmt(c.due)}">${w>60?c.title:''}</div>
+      </div>
     </div>`;
     if(exp){
       c.subtasks.filter(s=>s.start&&s.due&&s.start<=re&&s.due>=rs).forEach(s=>{
         const{l:sl,w:sw}=bp(s.start,s.due);
         html+=`<div class="gantt-row sub-row">
           <div class="gantt-task-label"><div class="gantt-sub-name">↳ ${s.text}</div><div style="font-size:10px;color:#aaa">${fmt(s.start)} → ${fmt(s.due)}</div></div>
-          <div class="gantt-track" style="width:${W}px;height:34px">${grid}<div class="g-bar sub-g${s.done?' done-bar':''}" style="left:${sl+1}px;width:${sw}px;background:${color}" title="${s.text}"></div></div>
+          <div class="gantt-track" style="width:${W}px;height:30px;position:relative;overflow:hidden">${grid}
+            <div style="position:absolute;left:${sl+1}px;width:${sw-2}px;height:10px;top:50%;transform:translateY(-50%);background:${color};border-radius:2px;opacity:.65" title="${s.text}"></div>
+          </div>
         </div>`;
       });
     }
     return html;
   }).join('');
 
+  // Header: month row + day/week row
+  const monthRow=months.map(m=>`<div style="position:absolute;left:${m.off}px;width:${m.w}px;height:18px;display:flex;align-items:center;padding:0 4px;font-size:10px;font-weight:600;color:#888;border-right:1px solid #f0efe9;overflow:hidden;white-space:nowrap">${m.label}</div>`).join('');
+  const dayRow=dense?'':days.map((d,i)=>`<div style="position:absolute;left:${i*DAY_W}px;width:${DAY_W}px;bottom:0;height:16px;text-align:center;font-size:9px;color:${d.today?'#534AB7':d.we?'#ccc':'#bbb'};font-weight:${d.today?'700':'400'};border-right:1px solid #f5f4f0;overflow:hidden">${DAY_W>=12?d.label:''}</div>`).join('');
+
   return`<div class="gantt-wrap">
     <div class="gantt-controls">
       <label>Dal</label><input type="date" value="${rs}" onchange="S.ganttStart=this.value;render()">
       <label>al</label><input type="date" value="${re}" onchange="S.ganttEnd=this.value;render()">
-      <button class="btn btn-sm" onclick="S.ganttStart=todayStr();S.ganttEnd=addDays(todayStr(),30);render()">30 giorni</button>
+      <button class="btn btn-sm" onclick="S.ganttStart=todayStr();S.ganttEnd=addDays(todayStr(),30);render()">1 mese</button>
       <button class="btn btn-sm" onclick="S.ganttStart=todayStr();S.ganttEnd=addDays(todayStr(),90);render()">3 mesi</button>
+      <button class="btn btn-sm" onclick="S.ganttStart=todayStr();S.ganttEnd=addDays(todayStr(),180);render()">6 mesi</button>
+      <button class="btn btn-sm" onclick="S.ganttStart=todayStr();S.ganttEnd=addDays(todayStr(),365);render()">1 anno</button>
       <div class="gantt-legend">${TAGS.filter(t=>usedTags.has(t.id)).map(t=>`<div class="gantt-legend-item"><div class="gantt-legend-dot" style="background:${t.color}"></div>${t.label}</div>`).join('')}</div>
     </div>
     <div class="gantt-container">
       <div class="gantt-inner">
         <div class="gantt-header">
           <div class="gantt-label-col">Task</div>
-          <div class="gantt-dates-header" style="width:${W}px">
-            ${months.map(m=>`<div class="gantt-month-label" style="left:${m.off}px">${m.label}</div>`).join('')}
-            ${days.map((d,i)=>`<div class="gantt-day-head${d.today?' today-head':''}${d.we?' weekend':''}" style="width:${DAY_W}px;left:${i*DAY_W}px">${d.label}</div>`).join('')}
+          <div class="gantt-dates-header" style="width:${W}px;position:relative;height:${dense?18:34}px">
+            ${monthRow}
+            ${dayRow}
           </div>
         </div>
         ${visible.length===0?`<div class="gantt-empty">Nessuna task con data inizio e scadenza nel periodo.<br>Usa ⋯ sulle card per aggiungere le date.</div>`:rows}
@@ -655,6 +688,104 @@ function setView(v){S.view=v;render()}
 
 const _so=localStorage.getItem('tf_owners');if(_so){try{S.owners=JSON.parse(_so)}catch{}}
 const _st=localStorage.getItem('tf_tags');if(_st){try{TAGS=JSON.parse(_st)}catch{}}
+
+function downloadExcel(){
+  // Build CSV-compatible data then trigger XLSX download via SheetJS from CDN
+  const script=document.createElement('script');
+  script.src='https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js';
+  script.onload=()=>{
+    const XLSX=window.XLSX;
+    const ownerName=id=>ownerById(id)?.name||id;
+    const rows=S.cards.map(c=>({
+      'Titolo *':c.title,
+      'Colonna *':COLS.find(x=>x.id===c.col)?.title||c.col,
+      'Owner *':ownerName(c.owner),
+      'Data inizio':c.start?c.start.split('-').reverse().join('/'):'',
+      'Scadenza':c.due?c.due.split('-').reverse().join('/'):'',
+      'Tag':(c.tags||[]).map(t=>tagById(t)?.label||t).join(', '),
+      'Dipende da':c.dependsOn?S.cards.find(x=>x.id===c.dependsOn)?.title||'':'',
+      'Subtask 1':c.subtasks[0]?.text||'',
+      'Inizio sub 1':c.subtasks[0]?.start?c.subtasks[0].start.split('-').reverse().join('/'):'',
+      'Scadenza sub 1':c.subtasks[0]?.due?c.subtasks[0].due.split('-').reverse().join('/'):'',
+      'Subtask 2':c.subtasks[1]?.text||'',
+      'Inizio sub 2':c.subtasks[1]?.start?c.subtasks[1].start.split('-').reverse().join('/'):'',
+      'Scadenza sub 2':c.subtasks[1]?.due?c.subtasks[1].due.split('-').reverse().join('/'):'',
+      'Subtask 3':c.subtasks[2]?.text||'',
+      'Inizio sub 3':c.subtasks[2]?.start?c.subtasks[2].start.split('-').reverse().join('/'):'',
+      'Scadenza sub 3':c.subtasks[2]?.due?c.subtasks[2].due.split('-').reverse().join('/'):'',
+      'Subtask 4':c.subtasks[3]?.text||'',
+      'Inizio sub 4':c.subtasks[3]?.start?c.subtasks[3].start.split('-').reverse().join('/'):'',
+      'Scadenza sub 4':c.subtasks[3]?.due?c.subtasks[3].due.split('-').reverse().join('/'):'',
+      'Subtask 5':c.subtasks[4]?.text||'',
+      'Inizio sub 5':c.subtasks[4]?.start?c.subtasks[4].start.split('-').reverse().join('/'):'',
+      'Scadenza sub 5':c.subtasks[4]?.due?c.subtasks[4].due.split('-').reverse().join('/'):'',
+    }));
+    const wb=XLSX.utils.book_new();
+    const ws=XLSX.utils.json_to_sheet(rows);
+    // Column widths
+    ws['!cols']=[{wch:28},{wch:14},{wch:13},{wch:13},{wch:13},{wch:14},{wch:28},...Array(15).fill({wch:13})];
+    XLSX.utils.book_append_sheet(wb,ws,'Progetti');
+    const date=new Date().toISOString().slice(0,10);
+    XLSX.writeFile(wb,`teamflow_${date}.xlsx`);
+    toast('Excel scaricato ✓');
+  };
+  document.head.appendChild(script);
+}
+
+function importExcel(input){
+  const file=input.files[0];if(!file)return;
+  const script=document.createElement('script');
+  script.src='https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js';
+  script.onload=()=>{
+    const reader=new FileReader();
+    reader.onload=async e=>{
+      const XLSX=window.XLSX;
+      const wb=XLSX.read(e.target.result,{type:'array',cellDates:true});
+      const ws=wb.Sheets[wb.SheetNames.find(n=>n==='Progetti')||wb.SheetNames[0]];
+      const rows=XLSX.utils.sheet_to_json(ws,{defval:''});
+      const colMap={'Da fare':'todo','In corso':'doing','Bloccate':'blocked','Fatto':'done'};
+      const ownerMap={};S.owners.forEach(o=>ownerMap[o.name]=o.id);
+      const fmtD=v=>{if(!v)return'';if(v instanceof Date)return v.toISOString().slice(0,10);const s=String(v).trim();const p=s.split('/');if(p.length===3)return`${p[2].length===2?'20'+p[2]:p[2]}-${p[1].padStart(2,'0')}-${p[0].padStart(2,'0')}`;return s};
+      let created=0,skipped=0;
+      for(const row of rows){
+        const title=String(row['Titolo *']||'').trim();
+        if(!title||title.startsWith('⚠'))continue;
+        const subs=[];
+        for(let i=1;i<=5;i++){
+          const txt=String(row[`Subtask ${i}`]||'').trim();
+          if(txt)subs.push({id:uid(),text:txt,done:false,start:fmtD(row[`Inizio sub ${i}`]),due:fmtD(row[`Scadenza sub ${i}`])});
+        }
+        const depTitle=String(row['Dipende da']||'').trim();
+        const data={title,col:colMap[String(row['Colonna *']||'Da fare').trim()]||'todo',
+          owner:ownerMap[String(row['Owner *']||'').trim()]||S.owners[0].id,
+          start:fmtD(row['Data inizio']),due:fmtD(row['Scadenza']),
+          tags:[],subtasks:subs,dependsOn:'',notes:[]};
+        try{
+          if(isConfigured()){
+            const r=await fetch(apiBase(),{method:'POST',headers:apiHeaders(),body:JSON.stringify({fields:toFields(data)})});
+            if(!r.ok)throw new Error();
+            const d=await r.json();
+            S.cards.push({id:d.id,...data,_depTitle:depTitle});
+          } else {S.cards.push({id:uid(),...data,_depTitle:depTitle});}
+          created++;
+        }catch{skipped++;}
+      }
+      // Resolve dependencies by title
+      for(const c of S.cards){
+        if(c._depTitle){
+          const dep=S.cards.find(x=>x.title===c._depTitle);
+          if(dep){c.dependsOn=dep.id;if(isConfigured())await fetch(`${apiBase()}/${c.id}`,{method:'PATCH',headers:apiHeaders(),body:JSON.stringify({fields:{DependsOn:dep.id}})});}
+          delete c._depTitle;
+        }
+      }
+      render();toast(`Importate ${created} card${skipped?' ('+skipped+' errori)':''} ✓`);
+    };
+    reader.readAsArrayBuffer(file);
+    input.value='';
+  };
+  if(window.XLSX)script.onload();
+  else document.head.appendChild(script);
+}
 
 async function boot(){await fetchSettings();await fetchCards()}
 boot();
