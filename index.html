@@ -809,57 +809,131 @@ function downloadExcel(){
 
 function importExcel(input){
   const file=input.files[0];if(!file)return;
-  const script=document.createElement('script');
-  script.src='https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js';
-  script.onload=()=>{
+  const load=()=>{
     const reader=new FileReader();
     reader.onload=async e=>{
       const XLSX=window.XLSX;
       const wb=XLSX.read(e.target.result,{type:'array',cellDates:true});
       const ws=wb.Sheets[wb.SheetNames.find(n=>n==='Progetti')||wb.SheetNames[0]];
-      const rows=XLSX.utils.sheet_to_json(ws,{defval:''});
+      // Auto-detect header row: find first row containing 'Titolo *'
+      const raw=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+      let headerRow=-1;
+      for(let i=0;i<Math.min(raw.length,5);i++){
+        if(raw[i].some(c=>String(c).trim()==='Titolo *')){headerRow=i;break;}
+      }
+      if(headerRow===-1){toast('Intestazioni non trovate nel file');return;}
+      const headers=raw[headerRow].map(h=>String(h).trim());
+      const dataRows=raw.slice(headerRow+1)
+        .filter(r=>r.some(c=>c!==null&&c!==undefined&&c!==''))
+        .map(r=>Object.fromEntries(headers.map((h,i)=>[h,r[i]??''])));
+
       const colMap={'Da fare':'todo','In corso':'doing','Bloccate':'blocked','Fatto':'done'};
       const ownerMap={};S.owners.forEach(o=>ownerMap[o.name]=o.id);
-      const fmtD=v=>{if(!v)return'';if(v instanceof Date)return v.toISOString().slice(0,10);const s=String(v).trim();const p=s.split('/');if(p.length===3)return`${p[2].length===2?'20'+p[2]:p[2]}-${p[1].padStart(2,'0')}-${p[0].padStart(2,'0')}`;return s};
-      let created=0,skipped=0;
-      for(const row of rows){
+      const fmtD=v=>{
+        if(!v)return'';
+        if(v instanceof Date)return v.toISOString().slice(0,10);
+        const s=String(v).trim();
+        if(!s)return'';
+        const p=s.split('/');
+        if(p.length===3)return`${p[2].length===2?'20'+p[2]:p[2]}-${p[1].padStart(2,'0')}-${p[0].padStart(2,'0')}`;
+        return s;
+      };
+
+      let created=0,updated=0,skipped=0;
+      const processed=[];
+
+      for(const row of dataRows){
         const title=String(row['Titolo *']||'').trim();
         if(!title||title.startsWith('⚠'))continue;
+
+        // Build subtasks from Excel (replace existing)
         const subs=[];
         for(let i=1;i<=5;i++){
           const txt=String(row[`Subtask ${i}`]||'').trim();
           if(txt)subs.push({id:uid(),text:txt,done:false,start:fmtD(row[`Inizio sub ${i}`]),due:fmtD(row[`Scadenza sub ${i}`])});
         }
-        const depTitle=String(row['Dipende da']||'').trim();
-        const data={title,col:colMap[String(row['Colonna *']||'Da fare').trim()]||'todo',
+
+        // Tags: pass as-is from Excel (free text, comma-separated)
+        // Map to tag IDs if found, otherwise keep as-is in a custom tag list
+        const tagRaw=String(row['Tag']||'').trim();
+        const tagIds=[];
+        if(tagRaw){
+          tagRaw.split(',').map(t=>t.trim()).forEach(lbl=>{
+            const found=TAGS.find(t=>t.label.toLowerCase()===lbl.toLowerCase());
+            if(found)tagIds.push(found.id);
+          });
+        }
+
+        const data={
+          title,
+          col:colMap[String(row['Colonna *']||'Da fare').trim()]||'todo',
           owner:ownerMap[String(row['Owner *']||'').trim()]||S.owners[0].id,
-          start:fmtD(row['Data inizio']),due:fmtD(row['Scadenza']),
-          tags:[],subtasks:subs,dependsOn:'',notes:[]};
+          start:fmtD(row['Data inizio']),
+          due:fmtD(row['Scadenza']),
+          tags:tagIds,
+          subtasks:subs,
+          dependsOn:'',
+          notes:[],
+          priority:String(row['Priorita']||row['Priorità']||'').trim(),
+          ambito:[],
+          ambitoExtra:String(row['Ambito extra']||'').trim(),
+        };
+
+        const depTitle=String(row['Dipende da']||'').trim();
+
+        // UPSERT: update if title already exists, create if new
+        const existing=S.cards.find(c=>c.title.toLowerCase()===title.toLowerCase());
         try{
-          if(isConfigured()){
-            const r=await fetch(apiBase(),{method:'POST',headers:apiHeaders(),body:JSON.stringify({fields:toFields(data)})});
-            if(!r.ok)throw new Error();
-            const d=await r.json();
-            S.cards.push({id:d.id,...data,_depTitle:depTitle});
-          } else {S.cards.push({id:uid(),...data,_depTitle:depTitle});}
-          created++;
-        }catch{skipped++;}
+          if(existing){
+            // Keep existing notes, ambito, dependsOn unless overridden
+            data.notes=existing.notes||[];
+            data.ambito=existing.ambito||[];
+            if(!data.ambitoExtra)data.ambitoExtra=existing.ambitoExtra||'';
+            Object.assign(existing,data);
+            if(isConfigured()){
+              const r=await fetch(`${apiBase()}/${existing.id}`,{method:'PATCH',headers:apiHeaders(),body:JSON.stringify({fields:toFields(data)})});
+              if(!r.ok){const er=await r.json();throw new Error(er.error?.message||r.statusText);}
+            }
+            processed.push({id:existing.id,...data,_depTitle:depTitle});
+            updated++;
+          } else {
+            if(isConfigured()){
+              const r=await fetch(apiBase(),{method:'POST',headers:apiHeaders(),body:JSON.stringify({fields:toFields(data)})});
+              if(!r.ok){const er=await r.json();throw new Error(er.error?.message||r.statusText);}
+              const d=await r.json();
+              const newCard={id:d.id,...data};
+              S.cards.push(newCard);
+              processed.push({...newCard,_depTitle:depTitle});
+            } else {
+              const newCard={id:uid(),...data};
+              S.cards.push(newCard);
+              processed.push({...newCard,_depTitle:depTitle});
+            }
+            created++;
+          }
+        }catch(err){console.error(title,err);skipped++;}
       }
+
       // Resolve dependencies by title
-      for(const c of S.cards){
+      for(const c of processed){
         if(c._depTitle){
-          const dep=S.cards.find(x=>x.title===c._depTitle);
-          if(dep){c.dependsOn=dep.id;if(isConfigured())await fetch(`${apiBase()}/${c.id}`,{method:'PATCH',headers:apiHeaders(),body:JSON.stringify({fields:{DependsOn:dep.id}})});}
-          delete c._depTitle;
+          const dep=S.cards.find(x=>x.title.toLowerCase()===c._depTitle.toLowerCase());
+          if(dep){
+            const card=S.cards.find(x=>x.id===c.id);
+            if(card)card.dependsOn=dep.id;
+            if(isConfigured())await fetch(`${apiBase()}/${c.id}`,{method:'PATCH',headers:apiHeaders(),body:JSON.stringify({fields:{DependsOn:dep.id}})});
+          }
         }
       }
-      render();toast(`Importate ${created} card${skipped?' ('+skipped+' errori)':''} ✓`);
+
+      render();
+      toast(`Import completato: ${created} nuove, ${updated} aggiornate${skipped?', '+skipped+' errori':''} ✓`);
     };
     reader.readAsArrayBuffer(file);
     input.value='';
   };
-  if(window.XLSX)script.onload();
-  else document.head.appendChild(script);
+  if(window.XLSX)load();
+  else{const s=document.createElement('script');s.src='https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js';s.onload=load;document.head.appendChild(s);}
 }
 
 async function boot(){await fetchSettings();await fetchCards()}
