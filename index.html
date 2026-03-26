@@ -184,7 +184,9 @@ function isConfigured(){const c=getCfg();return !!(c.token&&c.baseId)}
 function apiBase(tbl){const c=getCfg();return`https://api.airtable.com/v0/${c.baseId}/${encodeURIComponent(tbl||c.tableName||'Tasks')}`}
 function apiHeaders(){const c=getCfg();return{'Authorization':`Bearer ${c.token}`,'Content-Type':'application/json'}}
 
-let S={cards:[],owners:[...DEFAULT_OWNERS],loading:true,error:null,modal:null,expanded:{},ganttExp:{},view:'board',draft:null,ganttStart:'',ganttEnd:''};
+const DEFAULT_AMBITI=['Listino','SalesKit','Contract Docs','Formazione Interna','Product Definition/Description','Analisi/Ricerca','Articoli/Blog','Evento/Webinar','Campagne','Website','LoB/Cod. Art.','Comunicazione Interna'];
+let AMBITI=[...DEFAULT_AMBITI];
+let S={cards:[],owners:[...DEFAULT_OWNERS],loading:true,error:null,modal:null,expanded:{},ganttExp:{},view:'board',draft:null,ganttStart:'',ganttEnd:'',ownerFilter:null};
 let dragSrcId=null;
 
 function uid(){return 'x'+Math.random().toString(36).slice(2,9)}
@@ -292,6 +294,7 @@ async function fetchSettings(){
     d.records.forEach(rec=>{
       if(rec.fields.Key==='owners'){try{S.owners=JSON.parse(rec.fields.Value)}catch{}}
       if(rec.fields.Key==='tags'){try{TAGS=JSON.parse(rec.fields.Value)}catch{}}
+      if(rec.fields.Key==='ambiti'){try{AMBITI=JSON.parse(rec.fields.Value)}catch{}}
     });
     if(d.records.length){
       localStorage.setItem('tf_owners',JSON.stringify(S.owners));
@@ -313,6 +316,7 @@ async function pushSettings(){
     };
     await upsert('owners',S.owners);
     await upsert('tags',TAGS);
+    await upsert('ambiti',AMBITI);
   }catch(e){toast('Errore sync settings: '+e.message)}
 }
 
@@ -325,7 +329,7 @@ function buildHTML(){
   return`${buildTopbar()}
   ${!isConfigured()?`<div class="config-bar"><span>⚡ Configura Airtable per sincronizzare i dati →</span><button class="btn btn-sm btn-primary" onclick="setView('settings')">Configura ora</button></div>`:''}
   ${S.error?`<div class="error-banner">⚠ Errore: ${S.error} <button class="btn btn-sm" onclick="fetchCards()" style="margin-left:8px">Riprova</button></div>`:''}
-  ${S.view==='settings'?buildSettings():S.view==='gantt'?buildGantt():buildBoard(total,done,overdue,inprog)}
+  ${S.view==='settings'?buildSettings():S.view==='gantt'?buildGantt():S.view==='dashboard'?buildDashboard():buildBoard(total,done,overdue,inprog)}
   ${S.modal?buildModal():''}`;
 }
 
@@ -334,30 +338,38 @@ function buildTopbar(){
   return`<div class="topbar">
     <div class="logo"><div class="logo-sq"><svg viewBox="0 0 13 13"><rect x="1" y="1" width="4" height="4" rx="1"/><rect x="1" y="7" width="4" height="4" rx="1"/><rect x="7" y="1" width="4" height="4" rx="1"/><rect x="7" y="7" width="4" height="4" rx="1"/></svg></div>TeamFlow</div>
     <div class="topbar-right">
-      <div class="avatars">${S.owners.map(o=>`<div class="av" data-name="${o.name}" style="background:${o.bg};color:${o.color}">${o.initials}</div>`).join('')}</div>
-      ${v!=='settings'?`<div class="view-toggle"><button class="view-btn${v==='board'?' active':''}" onclick="setView('board')">Kanban</button><button class="view-btn${v==='gantt'?' active':''}" onclick="setView('gantt')">Gantt</button></div>`:''}
+      <div class="avatars" id="owner-avatars">${S.owners.map(o=>`<div class="av" data-name="${o.name}" data-oid="${o.id}" onclick="toggleOwnerFilter('${o.id}')" style="background:${o.bg};color:${o.color};cursor:pointer;outline:${S.ownerFilter===o.id?'3px solid '+o.color:'none'};outline-offset:2px;transition:outline .15s">${o.initials}</div>`).join('')}</div>
+      ${v!=='settings'?`<div class="view-toggle">
+        <button class="view-btn${v==='board'?' active':''}" onclick="setView('board')">Kanban</button>
+        <button class="view-btn${v==='gantt'?' active':''}" onclick="setView('gantt')">Gantt</button>
+        <button class="view-btn${v==='dashboard'?' active':''}" onclick="setView('dashboard')">Dashboard</button>
+      </div>`:''}
       ${isConfigured()?`<button class="btn btn-sm btn-ghost" onclick="boot()" title="Aggiorna">↻</button>`:''}
-      ${v!=='settings'&&isConfigured()?`<button class="btn btn-sm btn-ghost" onclick="downloadExcel()" title="Scarica Excel">⬇ Excel</button><label class="btn btn-sm btn-ghost" title="Importa Excel" style="cursor:pointer">⬆ Importa<input type="file" accept=".xlsx" style="display:none" onchange="importExcel(this)"></label>`:''}
+      ${v==='gantt'?`<button class="btn btn-sm btn-ghost" onclick="downloadGanttPng()" title="Scarica PNG">⬇ PNG</button>`:''}
+      ${v==='dashboard'?`<button class="btn btn-sm btn-ghost" onclick="downloadDashboardPng()" title="Scarica PNG">⬇ PNG</button>`:''}
+      ${v!=='settings'&&isConfigured()?`<button class="btn btn-sm btn-ghost" onclick="downloadExcel()">⬇ Excel</button><label class="btn btn-sm btn-ghost" style="cursor:pointer">⬆ Importa<input type="file" accept=".xlsx" style="display:none" onchange="importExcel(this)"></label>`:''}
       <button class="btn btn-sm btn-ghost" onclick="setView('settings')">⚙</button>
-      ${v!=='settings'&&isConfigured()?`<button class="btn btn-primary btn-sm" onclick="openNew()">+ Nuova card</button>`:''}
+      ${v==='board'&&isConfigured()?`<button class="btn btn-primary btn-sm" onclick="openNew()">+ Nuova card</button>`:''}
     </div>
   </div>`;
 }
 
 function buildBoard(total,done,overdue,inprog){
   if(S.loading)return`<div class="loading"><div class="spinner"></div> Carico da Airtable...</div>`;
-  return`<div class="dash-row">
-    <div class="stat"><div class="stat-label">Totale</div><div class="stat-val">${total}</div></div>
-    <div class="stat"><div class="stat-label">In corso</div><div class="stat-val" style="color:#185FA5">${inprog}</div></div>
-    <div class="stat"><div class="stat-label">Completate</div><div class="stat-val" style="color:#0F6E56">${done}</div></div>
-    <div class="stat"><div class="stat-label">Scadute</div><div class="stat-val" style="color:${overdue?'#A32D2D':'#1a1a1a'}">${overdue}</div></div>
-  </div>
-  <div class="board">
-    ${COLS.map(col=>`<div class="col">
-      <div class="col-head"><div class="col-dot" style="background:${col.color}"></div><div class="col-title">${col.title}</div><div class="col-count">${S.cards.filter(c=>c.col===col.id).length}</div></div>
-      <div class="col-body" id="col-${col.id}" data-col="${col.id}">${sortCardsByDue(S.cards.filter(c=>c.col===col.id)).map(c=>buildCard(c)).join('')}</div>
-      <button class="add-card-btn" onclick="openNew('${col.id}')">+ aggiungi</button>
-    </div>`).join('')}
+  const visibleCards=S.ownerFilter?S.cards.filter(c=>c.owner===S.ownerFilter):S.cards;
+  const filterBanner=S.ownerFilter?`<div style="background:#EEEDFE;border-bottom:1px solid #c4c0f0;padding:8px 20px;font-size:12px;color:#534AB7;display:flex;align-items:center;gap:8px">
+    <span>Filtro: <strong>${ownerById(S.ownerFilter).name}</strong> — ${visibleCards.length} card</span>
+    <button class="btn btn-sm" onclick="toggleOwnerFilter(null)" style="padding:2px 8px;font-size:11px">✕ rimuovi filtro</button>
+  </div>`:''
+  return filterBanner+`<div class="board" id="board">
+    ${COLS.map(col=>{
+      const colCards=sortCardsByDue(visibleCards.filter(c=>c.col===col.id));
+      return`<div class="col">
+        <div class="col-head"><div class="col-dot" style="background:${col.color}"></div><div class="col-title">${col.title}</div><div class="col-count">${colCards.length}</div></div>
+        <div class="col-body" id="col-${col.id}" data-col="${col.id}">${colCards.map(c=>buildCard(c)).join('')}</div>
+        <button class="add-card-btn" onclick="openNew('${col.id}')">+ aggiungi</button>
+      </div>`;
+    }).join('')}
   </div>`;
 }
 
@@ -385,6 +397,105 @@ function buildCard(c){
         ${c.start?`<div style="font-size:10px;color:#aaa">▶ ${fmt(c.start)}</div>`:''}
         ${c.due?`<div class="date-chip${od?' date-overdue':''}">${od?'▲ ':''}${fmt(c.due)}</div>`:''}
       </div>
+    </div>
+  </div>`;
+}
+
+function buildDashboard(){
+  if(S.loading)return`<div class="loading"><div class="spinner"></div> Carico...</div>`;
+  const all=S.cards;
+  const today=new Date(new Date().toDateString());
+
+  function stats(cards){
+    const total=cards.length;
+    const done=cards.filter(c=>c.col==='done').length;
+    const pct=total?Math.round(done/total*100):0;
+    const overdue=cards.filter(c=>c.col!=='done'&&c.due&&new Date(c.due)<today).length;
+    const byCol={};COLS.forEach(col=>byCol[col.id]=cards.filter(c=>c.col===col.id).length);
+    const byTag={};
+    cards.forEach(c=>(c.tags||[]).forEach(t=>{const tg=tagById(t);if(tg)byTag[tg.label]=(byTag[tg.label]||0)+1}));
+    // also count free-text tags not in TAGS
+    cards.forEach(c=>{const raw=(c.tags||[]).filter(t=>!tagById(t));raw.forEach(t=>{byTag[t]=(byTag[t]||0)+1})});
+    const byPri={High:0,Medium:0,Low:0,'':{n:0}};
+    cards.forEach(c=>{if(c.priority==='High')byPri.High++;else if(c.priority==='Medium')byPri.Medium++;else if(c.priority==='Low')byPri.Low++;});
+    const totalSubs=cards.reduce((s,c)=>s+(c.subtasks||[]).length,0);
+    const doneSubs=cards.reduce((s,c)=>s+(c.subtasks||[]).filter(x=>x.done).length,0);
+    const subPct=totalSubs?Math.round(doneSubs/totalSubs*100):null;
+    // next 5 upcoming due
+    const upcoming=cards.filter(c=>c.col!=='done'&&c.due&&new Date(c.due)>=today).sort((a,b)=>new Date(a.due)-new Date(b.due)).slice(0,5);
+    return{total,done,pct,overdue,byCol,byTag,byPri,subPct,upcoming};
+  }
+
+  function panel(title,cards,color){
+    const s=stats(cards);
+    const tagEntries=Object.entries(s.byTag).sort((a,b)=>b[1]-a[1]).slice(0,8);
+    const maxTag=tagEntries.length?tagEntries[0][1]:1;
+    return`<div style="background:#fff;border:1px solid #e2e0d8;border-radius:12px;padding:20px;break-inside:avoid">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid #f0efe9">
+        <div style="width:10px;height:10px;border-radius:50%;background:${color}"></div>
+        <div style="font-size:15px;font-weight:600">${title}</div>
+        <div style="margin-left:auto;font-size:12px;color:#888">${s.total} task totali</div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px">
+        <div style="background:#F7F6F2;border-radius:8px;padding:10px 12px">
+          <div style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Completamento</div>
+          <div style="font-size:22px;font-weight:600;color:${s.pct>=75?'#0F6E56':s.pct>=40?'#854F0B':'#1a1a1a'}">${s.pct}%</div>
+          <div style="height:4px;background:#e2e0d8;border-radius:2px;margin-top:6px"><div style="height:4px;background:${s.pct>=75?'#0F6E56':s.pct>=40?'#EF9F27':'#534AB7'};border-radius:2px;width:${s.pct}%"></div></div>
+        </div>
+        <div style="background:#F7F6F2;border-radius:8px;padding:10px 12px">
+          <div style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Fatto / Totale</div>
+          <div style="font-size:22px;font-weight:600">${s.done}<span style="font-size:13px;color:#888;font-weight:400"> / ${s.total}</span></div>
+        </div>
+        <div style="background:${s.overdue?'#FCEBEB':'#F7F6F2'};border-radius:8px;padding:10px 12px">
+          <div style="font-size:10px;color:${s.overdue?'#A32D2D':'#888'};text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Scadute</div>
+          <div style="font-size:22px;font-weight:600;color:${s.overdue?'#A32D2D':'#1a1a1a'}">${s.overdue}</div>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px">
+        <div>
+          <div style="font-size:11px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Per colonna</div>
+          ${COLS.map(col=>`<div style="display:flex;align-items:center;gap:8px;margin-bottom:5px">
+            <div style="width:8px;height:8px;border-radius:50%;background:${col.color};flex-shrink:0"></div>
+            <div style="font-size:12px;color:#555;flex:1">${col.title}</div>
+            <div style="font-size:12px;font-weight:600">${s.byCol[col.id]||0}</div>
+          </div>`).join('')}
+        </div>
+        <div>
+          <div style="font-size:11px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Priorità</div>
+          ${[['High','#A32D2D','#FCEBEB'],['Medium','#854F0B','#FAEEDA'],['Low','#3B6D11','#EAF3DE']].map(([p,c,bg])=>s.byPri[p]?`<div style="display:flex;align-items:center;gap:8px;margin-bottom:5px">
+            <span style="background:${bg};color:${c};font-size:10px;font-weight:600;padding:1px 7px;border-radius:100px">${p}</span>
+            <div style="flex:1;height:4px;background:#f0efe9;border-radius:2px"><div style="height:4px;background:${c};border-radius:2px;width:${s.total?Math.round(s.byPri[p]/s.total*100):0}%"></div></div>
+            <div style="font-size:12px;font-weight:600">${s.byPri[p]}</div>
+          </div>`:'').join('')}
+        </div>
+      </div>
+
+      ${tagEntries.length?`<div style="margin-bottom:14px">
+        <div style="font-size:11px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Per tag</div>
+        ${tagEntries.map(([lbl,n])=>{const tg=TAGS.find(t=>t.label===lbl);const cs=tg?tagCss(tg.color):{bg:'#F1EFE8',text:'#5F5E5A'};return`<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+          <span style="background:${cs.bg};color:${cs.text};font-size:11px;font-weight:500;padding:1px 8px;border-radius:100px;min-width:70px;text-align:center">${lbl}</span>
+          <div style="flex:1;height:4px;background:#f0efe9;border-radius:2px"><div style="height:4px;background:${cs.text};border-radius:2px;opacity:.6;width:${Math.round(n/maxTag*100)}%"></div></div>
+          <div style="font-size:12px;font-weight:600">${n}</div>
+        </div>`}).join('')}
+      </div>`:``}
+
+      ${s.upcoming.length?`<div>
+        <div style="font-size:11px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Prossime scadenze</div>
+        ${s.upcoming.map(c=>{const od=new Date(c.due)<today;return`<div style="display:flex;align-items:center;gap:8px;padding:4px 0;border-bottom:1px solid #f5f4f0">
+          <div style="font-size:12px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${c.title}</div>
+          <div style="font-size:11px;color:${od?'#A32D2D':'#888'};font-weight:${od?600:400};flex-shrink:0">${fmt(c.due)}</div>
+        </div>`}).join('')}
+      </div>`:''}
+    </div>`;
+  }
+
+  return`<div id="dashboard-content" style="padding:20px;display:flex;flex-direction:column;gap:20px">
+    <div style="font-size:18px;font-weight:600">Dashboard — Stato delle attività</div>
+    ${panel('Team completo',all,'#534AB7')}
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:16px">
+      ${S.owners.map(o=>panel(o.name,all.filter(c=>c.owner===o.id),o.color)).join('')}
     </div>
   </div>`;
 }
@@ -459,7 +570,7 @@ function buildGantt(){
   const monthRow=months.map(m=>`<div style="position:absolute;left:${m.off}px;width:${m.w}px;height:18px;display:flex;align-items:center;padding:0 4px;font-size:10px;font-weight:600;color:#888;border-right:1px solid #f0efe9;overflow:hidden;white-space:nowrap">${m.label}</div>`).join('');
   const dayRow=dense?'':days.map((d,i)=>`<div style="position:absolute;left:${i*DAY_W}px;width:${DAY_W}px;bottom:0;height:16px;text-align:center;font-size:9px;color:${d.today?'#534AB7':d.we?'#ccc':'#bbb'};font-weight:${d.today?'700':'400'};border-right:1px solid #f5f4f0;overflow:hidden">${DAY_W>=12?d.label:''}</div>`).join('');
 
-  return`<div class="gantt-wrap">
+  return`<div id="gantt-export" class="gantt-wrap">
     <div class="gantt-controls">
       <label>Dal</label><input type="date" value="${rs}" onchange="S.ganttStart=this.value;render()">
       <label>al</label><input type="date" value="${re}" onchange="S.ganttEnd=this.value;render()">
@@ -514,7 +625,7 @@ function buildModal(){
     <div class="form-group">
       <label class="form-label">Ambito</label>
       <div style="display:flex;flex-wrap:wrap;gap:6px">
-        ${['Listino','SalesKit','Contract Docs','Formazione Interna','Product Definition/Description','Analisi/Ricerca','Articoli/Blog','Evento/Webinar','Campagne','Website','LoB/Cod. Art.','Comunicazione Interna'].map(a=>`<label style="display:flex;align-items:center;gap:5px;font-size:12px;cursor:pointer;padding:3px 8px;border:1px solid ${(d.ambito||[]).includes(a)?'#534AB7':'#e2e0d8'};border-radius:100px;background:${(d.ambito||[]).includes(a)?'#EEEDFE':'#fff'};color:${(d.ambito||[]).includes(a)?'#534AB7':'#555'};transition:all .12s"><input type="checkbox" class="ambito-check" data-ambito="${a}" ${(d.ambito||[]).includes(a)?'checked':''} style="accent-color:#534AB7;width:12px;height:12px">${a}</label>`).join('')}
+        ${AMBITI.map(a=>`<label style="display:flex;align-items:center;gap:5px;font-size:12px;cursor:pointer;padding:3px 8px;border:1px solid ${(d.ambito||[]).includes(a)?'#534AB7':'#e2e0d8'};border-radius:100px;background:${(d.ambito||[]).includes(a)?'#EEEDFE':'#fff'};color:${(d.ambito||[]).includes(a)?'#534AB7':'#555'};transition:all .12s"><input type="checkbox" class="ambito-check" data-ambito="${a}" ${(d.ambito||[]).includes(a)?'checked':''} style="accent-color:#534AB7;width:12px;height:12px">${a}</label>`).join('')}
       </div>
       <div style="display:flex;gap:6px;margin-top:8px">
         <input id="ambito-extra-input" class="form-input" type="text" placeholder="Aggiungi ambito personalizzato..." value="${d.ambitoExtra||''}" style="flex:1;font-size:12px;padding:6px 10px">
@@ -585,6 +696,17 @@ function buildSettings(){
       </div>`).join('')}
     </div>
     <button class="btn btn-sm" id="add-tag-btn" style="margin-bottom:20px">+ Aggiungi tag</button>
+
+    <h2 style="margin-top:22px">Ambiti personalizzabili</h2>
+    <p>Le voci di Ambito disponibili su tutte le card. Salvate su Airtable per tutto il team.</p>
+    <div id="ambiti-list">
+      ${AMBITI.map((a,i)=>`<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+        <input class="form-input ambito-global-inp" data-ai="${i}" type="text" value="${a}" style="flex:1">
+        <button class="btn btn-sm btn-danger ambito-global-del" data-ai="${i}">✕</button>
+      </div>`).join('')}
+    </div>
+    <button class="btn btn-sm" id="add-ambito-btn" style="margin-bottom:20px">+ Aggiungi ambito</button>
+
     <div style="display:flex;gap:8px">
       <button class="btn btn-primary" id="save-cfg-btn">Salva e sincronizza</button>
       ${isConfigured()?`<button class="btn" id="back-btn">← Torna al board</button>`:''}
@@ -696,10 +818,12 @@ function bindEvents(){
     S.owners.forEach(o=>{const el=document.getElementById('owner-name-'+o.id);if(el)o.name=el.value.trim()||o.name});
     document.querySelectorAll('.tag-label-inp').forEach(el=>{const i=+el.dataset.ti;if(TAGS[i])TAGS[i].label=el.value});
     document.querySelectorAll('.tag-color-inp').forEach(el=>{const i=+el.dataset.ti;if(TAGS[i])TAGS[i].color=el.value});
+    document.querySelectorAll('.ambito-global-inp').forEach(el=>{const i=+el.dataset.ai;if(AMBITI[i]!==undefined)AMBITI[i]=el.value.trim()});
     localStorage.setItem('tf_owners',JSON.stringify(S.owners));
     localStorage.setItem('tf_tags',JSON.stringify(TAGS));
     toast('Salvo e sincronizzo...');
     await pushSettings();
+    localStorage.setItem('tf_ambiti',JSON.stringify(AMBITI));
     toast('Salvato e sincronizzato ✓');
     S.view='board';fetchCards();
   });
@@ -708,6 +832,9 @@ function bindEvents(){
   document.querySelectorAll('.tag-label-inp').forEach(el=>{el.addEventListener('input',()=>{const i=+el.dataset.ti;if(TAGS[i])TAGS[i].label=el.value})});
   document.querySelectorAll('.tag-color-inp').forEach(el=>{el.addEventListener('input',()=>{const i=+el.dataset.ti;if(TAGS[i])TAGS[i].color=el.value})});
   document.querySelectorAll('.tag-del-btn').forEach(el=>{el.addEventListener('click',()=>{if(TAGS.length<=1){toast('Mantieni almeno un tag');return;}TAGS=TAGS.filter((_,i)=>i!==+el.dataset.ti);render()})});
+  bind('add-ambito-btn','click',()=>{AMBITI=[...AMBITI,'nuovo ambito'];render();setTimeout(()=>{const ins=document.querySelectorAll('.ambito-global-inp');if(ins.length)ins[ins.length-1].select()},50)});
+  document.querySelectorAll('.ambito-global-inp').forEach(el=>{el.addEventListener('input',()=>{const i=+el.dataset.ai;if(AMBITI[i]!==undefined)AMBITI[i]=el.value})});
+  document.querySelectorAll('.ambito-global-del').forEach(el=>{el.addEventListener('click',()=>{if(AMBITI.length<=1){toast('Mantieni almeno un ambito');return;}AMBITI=AMBITI.filter((_,i)=>i!==+el.dataset.ai);render()})});
 }
 
 function addSubtask(){
@@ -760,6 +887,7 @@ function setView(v){S.view=v;render()}
 
 const _so=localStorage.getItem('tf_owners');if(_so){try{S.owners=JSON.parse(_so)}catch{}}
 const _st=localStorage.getItem('tf_tags');if(_st){try{TAGS=JSON.parse(_st)}catch{}}
+const _sa=localStorage.getItem('tf_ambiti');if(_sa){try{AMBITI=JSON.parse(_sa)}catch{}}
 
 function downloadExcel(){
   // Build CSV-compatible data then trigger XLSX download via SheetJS from CDN
@@ -935,6 +1063,32 @@ function importExcel(input){
   if(window.XLSX)load();
   else{const s=document.createElement('script');s.src='https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js';s.onload=load;document.head.appendChild(s);}
 }
+
+function toggleOwnerFilter(oid){
+  S.ownerFilter=S.ownerFilter===oid?null:oid;
+  render();
+}
+
+function downloadPng(elId,filename){
+  const load=()=>{
+    const el=document.getElementById(elId);
+    if(!el){toast('Elemento non trovato');return;}
+    window.html2canvas(el,{backgroundColor:'#fff',scale:2,useCORS:true,logging:false}).then(canvas=>{
+      const a=document.createElement('a');
+      a.download=filename+'_'+todayStr()+'.png';
+      a.href=canvas.toDataURL('image/png');
+      a.click();
+      toast('PNG scaricato ✓');
+    }).catch(()=>toast('Errore durante il download'));
+  };
+  if(window.html2canvas){load();return;}
+  const s=document.createElement('script');
+  s.src='https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
+  s.onload=load;document.head.appendChild(s);
+}
+
+function downloadGanttPng(){downloadPng('gantt-export','gantt_teamflow')}
+function downloadDashboardPng(){downloadPng('dashboard-content','dashboard_teamflow')}
 
 async function boot(){await fetchSettings();await fetchCards()}
 boot();
