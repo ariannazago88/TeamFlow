@@ -550,7 +550,8 @@ function buildGantt(){
   // For dense views (DAY_W < 10), only show month markers not individual days
   const dense=DAY_W<10;
   const visible=S.cards.filter(c=>c.start&&c.due&&c.start<=re&&c.due>=rs);
-  const usedTags=new Set(visible.flatMap(c=>c.tags));
+  const visibleGantt=S.ownerFilter?visible.filter(c=>c.owner===S.ownerFilter):visible;
+  const usedTags=new Set(visibleGantt.flatMap(c=>c.tags));
   const NM=['Gen','Feb','Mar','Apr','Mag','Giu','Lug','Ago','Set','Ott','Nov','Dic'];
 
   const days=[];
@@ -608,10 +609,6 @@ function buildGantt(){
   // Header: month row + day/week row
   const monthRow=months.map(m=>`<div style="position:absolute;left:${m.off}px;width:${m.w}px;height:18px;display:flex;align-items:center;padding:0 4px;font-size:10px;font-weight:600;color:#888;border-right:1px solid #f0efe9;overflow:hidden;white-space:nowrap">${m.label}</div>`).join('');
   const dayRow=dense?'':days.map((d,i)=>`<div style="position:absolute;left:${i*DAY_W}px;width:${DAY_W}px;bottom:0;height:16px;text-align:center;font-size:9px;color:${d.today?'#534AB7':d.we?'#ccc':'#bbb'};font-weight:${d.today?'700':'400'};border-right:1px solid #f5f4f0;overflow:hidden">${DAY_W>=12?d.label:''}</div>`).join('');
-
-  // owner filter for gantt
-  const ganttOwnerFilter=S.ownerFilter;
-  const visibleGantt=(ganttOwnerFilter?visible.filter(c=>c.owner===ganttOwnerFilter):visible);
 
   return`<div id="gantt-export" class="gantt-wrap">
     <div class="gantt-controls">
