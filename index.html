@@ -186,7 +186,7 @@ function apiHeaders(){const c=getCfg();return{'Authorization':`Bearer ${c.token}
 
 const DEFAULT_AMBITI=['Listino','SalesKit','Contract Docs','Formazione Interna','Product Definition/Description','Analisi/Ricerca','Articoli/Blog','Evento/Webinar','Campagne','Website','LoB/Cod. Art.','Comunicazione Interna'];
 let AMBITI=[...DEFAULT_AMBITI];
-let S={cards:[],owners:[...DEFAULT_OWNERS],loading:true,error:null,modal:null,expanded:{},ganttExp:{},view:'board',draft:null,ganttStart:'',ganttEnd:'',ownerFilter:null};
+let S={cards:[],owners:[...DEFAULT_OWNERS],loading:true,error:null,modal:null,expanded:{},ganttExp:{},view:'board',draft:null,ganttStart:'',ganttEnd:'',ownerFilter:null,searchQ:'',dashStart:'',dashEnd:''};
 let dragSrcId=null;
 
 function uid(){return 'x'+Math.random().toString(36).slice(2,9)}
@@ -329,6 +329,7 @@ function buildHTML(){
   return`${buildTopbar()}
   ${!isConfigured()?`<div class="config-bar"><span>⚡ Configura Airtable per sincronizzare i dati →</span><button class="btn btn-sm btn-primary" onclick="setView('settings')">Configura ora</button></div>`:''}
   ${S.error?`<div class="error-banner">⚠ Errore: ${S.error} <button class="btn btn-sm" onclick="fetchCards()" style="margin-left:8px">Riprova</button></div>`:''}
+  ${S.view==='board'?`<div style="padding:12px 20px 0;background:#fff;border-bottom:1px solid #f0efe9"><div style="position:relative;max-width:360px"><svg style="position:absolute;left:10px;top:50%;transform:translateY(-50%);pointer-events:none;color:#aaa" width="14" height="14" viewBox="0 0 16 16" fill="none"><circle cx="7" cy="7" r="5" stroke="currentColor" stroke-width="1.5"/><path d="M11 11l3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg><input id="search-input" type="text" value="${S.searchQ}" placeholder="Cerca card..." oninput="S.searchQ=this.value;render()" style="width:100%;padding:7px 10px 7px 30px;border:1px solid #e2e0d8;border-radius:8px;font-size:13px;font-family:inherit;background:#f7f6f2;color:#1a1a1a;outline:none" onfocus="this.style.background='#fff';this.style.borderColor='#534AB7'" onblur="this.style.background='#f7f6f2';this.style.borderColor='#e2e0d8'">${S.searchQ?`<button onclick="S.searchQ='';render()" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);border:none;background:none;cursor:pointer;color:#aaa;font-size:14px;padding:0">✕</button>`:''}</div></div>`:'' }
   ${S.view==='settings'?buildSettings():S.view==='gantt'?buildGantt():S.view==='dashboard'?buildDashboard():buildBoard(total,done,overdue,inprog)}
   ${S.modal?buildModal():''}`;
 }
@@ -356,7 +357,16 @@ function buildTopbar(){
 
 function buildBoard(total,done,overdue,inprog){
   if(S.loading)return`<div class="loading"><div class="spinner"></div> Carico da Airtable...</div>`;
-  const visibleCards=S.ownerFilter?S.cards.filter(c=>c.owner===S.ownerFilter):S.cards;
+  let visibleCards=S.ownerFilter?S.cards.filter(c=>c.owner===S.ownerFilter):S.cards;
+  if(S.searchQ){
+    const q=S.searchQ.toLowerCase();
+    visibleCards=visibleCards.filter(c=>
+      c.title.toLowerCase().includes(q)||
+      (c.tags||[]).some(t=>{const tg=tagById(t);return tg&&tg.label.toLowerCase().includes(q)})||
+      ownerById(c.owner).name.toLowerCase().includes(q)||
+      (c.ambito||[]).some(a=>a.toLowerCase().includes(q))
+    );
+  }
   const filterBanner=S.ownerFilter?`<div style="background:#EEEDFE;border-bottom:1px solid #c4c0f0;padding:8px 20px;font-size:12px;color:#534AB7;display:flex;align-items:center;gap:8px">
     <span>Filtro: <strong>${ownerById(S.ownerFilter).name}</strong> — ${visibleCards.length} card</span>
     <button class="btn btn-sm" onclick="toggleOwnerFilter(null)" style="padding:2px 8px;font-size:11px">✕ rimuovi filtro</button>
@@ -403,8 +413,27 @@ function buildCard(c){
 
 function buildDashboard(){
   if(S.loading)return`<div class="loading"><div class="spinner"></div> Carico...</div>`;
-  const all=S.cards;
   const today=new Date(new Date().toDateString());
+  // Date filter: cards active in period = start <= dashEnd AND (due >= dashStart OR no due)
+  // Also includes cards with start before dashStart (already in progress)
+  const ds=S.dashStart,de=S.dashEnd;
+  function inPeriod(c){
+    if(!ds&&!de)return true;
+    // card is active if: started on or before end of period AND ends on or after start of period
+    const cardStart=c.start||'';
+    const cardDue=c.due||'';
+    if(ds&&de){
+      // started before or during period
+      const startedBefore=!cardStart||(cardStart<=de);
+      // active during period: due after start OR no due date (ongoing)
+      const activeDuring=!cardDue||(cardDue>=ds);
+      return startedBefore&&activeDuring;
+    }
+    if(ds&&!de)return !cardDue||(cardDue>=ds);
+    if(!ds&&de)return !cardStart||(cardStart<=de);
+    return true;
+  }
+  const all=S.cards.filter(inPeriod);
 
   function stats(cards){
     const total=cards.length;
@@ -492,7 +521,17 @@ function buildDashboard(){
   }
 
   return`<div id="dashboard-content" style="padding:20px;display:flex;flex-direction:column;gap:20px">
-    <div style="font-size:18px;font-weight:600">Dashboard — Stato delle attività</div>
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+      <div style="font-size:18px;font-weight:600">Dashboard — Stato delle attività</div>
+      <div style="display:flex;align-items:center;gap:8px;margin-left:auto;flex-wrap:wrap">
+        <label style="font-size:12px;color:#888;font-weight:500">Da</label>
+        <input type="date" id="dash-start-input" value="${ds||''}" style="padding:5px 8px;border:1px solid #e2e0d8;border-radius:7px;font-size:12px;font-family:inherit;background:#fff;color:#1a1a1a">
+        <label style="font-size:12px;color:#888;font-weight:500">a</label>
+        <input type="date" id="dash-end-input" value="${de||''}" style="padding:5px 8px;border:1px solid #e2e0d8;border-radius:7px;font-size:12px;font-family:inherit;background:#fff;color:#1a1a1a">
+        ${ds||de?`<button id="dash-clear-btn" class="btn btn-sm">✕ tutto il periodo</button>`:''}
+        ${ds||de?`<span style="font-size:12px;color:#534AB7;font-weight:500">${all.length} card nel periodo</span>`:''}
+      </div>
+    </div>
     ${panel('Team completo',all,'#534AB7')}
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:16px">
       ${S.owners.map(o=>panel(o.name,all.filter(c=>c.owner===o.id),o.color)).join('')}
@@ -539,7 +578,7 @@ function buildGantt(){
   const todayLine=todayOff>=0?`<div style="position:absolute;top:0;bottom:0;left:${todayOff}px;width:2px;background:#534AB7;opacity:.25;z-index:2"></div>`:'';
   const grid=monthStripes+weekMarkers+todayLine;
 
-  const rows=visible.map(c=>{
+  const rows=visibleGantt.map(c=>{
     const color=tagBar(c.tags),{l,w}=bp(c.start,c.due),exp=S.ganttExp[c.id];
     const hasSubs=c.subtasks&&c.subtasks.some(s=>s.start&&s.due);
     const o=ownerById(c.owner);
@@ -570,14 +609,18 @@ function buildGantt(){
   const monthRow=months.map(m=>`<div style="position:absolute;left:${m.off}px;width:${m.w}px;height:18px;display:flex;align-items:center;padding:0 4px;font-size:10px;font-weight:600;color:#888;border-right:1px solid #f0efe9;overflow:hidden;white-space:nowrap">${m.label}</div>`).join('');
   const dayRow=dense?'':days.map((d,i)=>`<div style="position:absolute;left:${i*DAY_W}px;width:${DAY_W}px;bottom:0;height:16px;text-align:center;font-size:9px;color:${d.today?'#534AB7':d.we?'#ccc':'#bbb'};font-weight:${d.today?'700':'400'};border-right:1px solid #f5f4f0;overflow:hidden">${DAY_W>=12?d.label:''}</div>`).join('');
 
+  // owner filter for gantt
+  const ganttOwnerFilter=S.ownerFilter;
+  const visibleGantt=(ganttOwnerFilter?visible.filter(c=>c.owner===ganttOwnerFilter):visible);
+
   return`<div id="gantt-export" class="gantt-wrap">
     <div class="gantt-controls">
-      <label>Dal</label><input type="date" value="${rs}" onchange="S.ganttStart=this.value;render()">
-      <label>al</label><input type="date" value="${re}" onchange="S.ganttEnd=this.value;render()">
-      <button class="btn btn-sm" onclick="S.ganttStart=todayStr();S.ganttEnd=addDays(todayStr(),30);render()">1 mese</button>
-      <button class="btn btn-sm" onclick="S.ganttStart=todayStr();S.ganttEnd=addDays(todayStr(),90);render()">3 mesi</button>
-      <button class="btn btn-sm" onclick="S.ganttStart=todayStr();S.ganttEnd=addDays(todayStr(),180);render()">6 mesi</button>
-      <button class="btn btn-sm" onclick="S.ganttStart=todayStr();S.ganttEnd=addDays(todayStr(),365);render()">1 anno</button>
+      <label>Dal</label><input type="date" id="gantt-start-input" value="${rs}">
+      <label>al</label><input type="date" id="gantt-end-input" value="${re}">
+      <button class="btn btn-sm" id="gantt-1m">1 mese</button>
+      <button class="btn btn-sm" id="gantt-3m">3 mesi</button>
+      <button class="btn btn-sm" id="gantt-6m">6 mesi</button>
+      <button class="btn btn-sm" id="gantt-1y">1 anno</button>
       <div class="gantt-legend">${TAGS.filter(t=>usedTags.has(t.id)).map(t=>`<div class="gantt-legend-item"><div class="gantt-legend-dot" style="background:${t.color}"></div>${t.label}</div>`).join('')}</div>
     </div>
     <div class="gantt-container">
@@ -589,7 +632,7 @@ function buildGantt(){
             ${dayRow}
           </div>
         </div>
-        ${visible.length===0?`<div class="gantt-empty">Nessuna task con data inizio e scadenza nel periodo.<br>Usa ⋯ sulle card per aggiungere le date.</div>`:rows}
+        ${visibleGantt.length===0?`<div class="gantt-empty">Nessuna task con data inizio e scadenza nel periodo.<br>Usa ⋯ sulle card per aggiungere le date.</div>`:rows}
       </div>
     </div>
   </div>`;
@@ -835,6 +878,21 @@ function bindEvents(){
   bind('add-ambito-btn','click',()=>{AMBITI=[...AMBITI,'nuovo ambito'];render();setTimeout(()=>{const ins=document.querySelectorAll('.ambito-global-inp');if(ins.length)ins[ins.length-1].select()},50)});
   document.querySelectorAll('.ambito-global-inp').forEach(el=>{el.addEventListener('input',()=>{const i=+el.dataset.ai;if(AMBITI[i]!==undefined)AMBITI[i]=el.value})});
   document.querySelectorAll('.ambito-global-del').forEach(el=>{el.addEventListener('click',()=>{if(AMBITI.length<=1){toast('Mantieni almeno un ambito');return;}AMBITI=AMBITI.filter((_,i)=>i!==+el.dataset.ai);render()})});
+  // Gantt date controls (fix for datepicker bug)
+  const gsi=document.getElementById('gantt-start-input');
+  if(gsi)gsi.addEventListener('change',()=>{S.ganttStart=gsi.value;render()});
+  const gei=document.getElementById('gantt-end-input');
+  if(gei)gei.addEventListener('change',()=>{S.ganttEnd=gei.value;render()});
+  bind('gantt-1m','click',()=>{S.ganttStart=todayStr();S.ganttEnd=addDays(todayStr(),30);render()});
+  bind('gantt-3m','click',()=>{S.ganttStart=todayStr();S.ganttEnd=addDays(todayStr(),90);render()});
+  bind('gantt-6m','click',()=>{S.ganttStart=todayStr();S.ganttEnd=addDays(todayStr(),180);render()});
+  bind('gantt-1y','click',()=>{S.ganttStart=todayStr();S.ganttEnd=addDays(todayStr(),365);render()});
+  // Dashboard date controls
+  const dsi=document.getElementById('dash-start-input');
+  if(dsi)dsi.addEventListener('change',()=>{S.dashStart=dsi.value;render()});
+  const dei=document.getElementById('dash-end-input');
+  if(dei)dei.addEventListener('change',()=>{S.dashEnd=dei.value;render()});
+  bind('dash-clear-btn','click',()=>{S.dashStart='';S.dashEnd='';render()});
 }
 
 function addSubtask(){
@@ -1063,6 +1121,7 @@ function importExcel(input){
   if(window.XLSX)load();
   else{const s=document.createElement('script');s.src='https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js';s.onload=load;document.head.appendChild(s);}
 }
+
 
 function toggleOwnerFilter(oid){
   S.ownerFilter=S.ownerFilter===oid?null:oid;
