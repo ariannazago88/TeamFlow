@@ -639,6 +639,29 @@ function bindEvents(){
   document.querySelectorAll('[data-delsub]').forEach(el=>{
     el.addEventListener('click',()=>{S.draft.subtasks=S.draft.subtasks.filter(s=>s.id!==el.dataset.delsub);render()});
   });
+  document.querySelectorAll('.ambito-check').forEach(el=>{
+    el.addEventListener('change',()=>{
+      const voce=el.dataset.ambito;
+      if(el.checked){
+        // Add subtask only if not already present (by ambito tag)
+        const exists=S.draft.subtasks.some(s=>s._ambito===voce);
+        if(!exists){
+          S.draft.subtasks=[...S.draft.subtasks,{id:uid(),text:voce,done:false,start:'',due:'',_ambito:voce}];
+        }
+        if(!S.draft.ambito)S.draft.ambito=[];
+        if(!S.draft.ambito.includes(voce))S.draft.ambito=[...S.draft.ambito,voce];
+      } else {
+        // Remove ambito from list
+        S.draft.ambito=(S.draft.ambito||[]).filter(a=>a!==voce);
+        // Remove corresponding subtask ONLY if dates are still empty
+        S.draft.subtasks=S.draft.subtasks.filter(s=>{
+          if(s._ambito===voce&&!s.start&&!s.due&&!s.done)return false;
+          return true;
+        });
+      }
+      render();
+    });
+  });
   document.querySelectorAll('.ssi').forEach(el=>{el.addEventListener('change',()=>{const sub=S.draft.subtasks.find(s=>s.id===el.dataset.sid);if(sub)sub.start=el.value})});
   document.querySelectorAll('.sdi').forEach(el=>{el.addEventListener('change',()=>{const sub=S.draft.subtasks.find(s=>s.id===el.dataset.sid);if(sub)sub.due=el.value})});
   bind('save-cfg-btn','click',async()=>{
@@ -682,7 +705,8 @@ async function handleSave(){
   S.draft.due=document.getElementById('f-due')?.value||'';
   S.draft.dependsOn=document.getElementById('f-dep')?.value||'';
   S.draft.priority=document.getElementById('f-priority')?.value||'';
-  S.draft.ambito=Array.from(document.querySelectorAll('.ambito-check:checked')).map(el=>el.dataset.ambito);
+  // ambito already synced live by checkbox listeners; just ensure array exists
+  if(!S.draft.ambito)S.draft.ambito=[];
   const isEdit=S.modal&&S.modal.mode==='edit';
   const copy={...S.draft,subtasks:[...(S.draft.subtasks||[])]};
   const copyId=S.draft.id;
