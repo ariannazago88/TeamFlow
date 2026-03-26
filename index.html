@@ -227,6 +227,7 @@ function toFields(d){
   if(d.start)f.Start=d.start; else f.Start=null;
   if(d.priority)f.Priority=d.priority;
   f.Ambito=JSON.stringify(d.ambito||[]);
+  f.AmbitoExtra=d.ambitoExtra||'';
   return f;
 }
 
@@ -250,7 +251,8 @@ async function fetchCards(){
         dependsOn:rec.fields.DependsOn||'',
         notes:rec.fields.Notes?JSON.parse(rec.fields.Notes):[],
         priority:rec.fields.Priority||'',
-        ambito:rec.fields.Ambito?JSON.parse(rec.fields.Ambito):[]};
+        ambito:rec.fields.Ambito?JSON.parse(rec.fields.Ambito):[],
+        ambitoExtra:rec.fields.AmbitoExtra||''};
     });
     S.error=null;
   }catch(e){S.error=e.message}
@@ -514,6 +516,11 @@ function buildModal(){
       <div style="display:flex;flex-wrap:wrap;gap:6px">
         ${['Listino','SalesKit','Contract Docs','Formazione Interna','Product Definition/Description','Analisi/Ricerca','Articoli/Blog','Evento/Webinar','Campagne','Website','LoB/Cod. Art.','Comunicazione Interna'].map(a=>`<label style="display:flex;align-items:center;gap:5px;font-size:12px;cursor:pointer;padding:3px 8px;border:1px solid ${(d.ambito||[]).includes(a)?'#534AB7':'#e2e0d8'};border-radius:100px;background:${(d.ambito||[]).includes(a)?'#EEEDFE':'#fff'};color:${(d.ambito||[]).includes(a)?'#534AB7':'#555'};transition:all .12s"><input type="checkbox" class="ambito-check" data-ambito="${a}" ${(d.ambito||[]).includes(a)?'checked':''} style="accent-color:#534AB7;width:12px;height:12px">${a}</label>`).join('')}
       </div>
+      <div style="display:flex;gap:6px;margin-top:8px">
+        <input id="ambito-extra-input" class="form-input" type="text" placeholder="Aggiungi ambito personalizzato..." value="${d.ambitoExtra||''}" style="flex:1;font-size:12px;padding:6px 10px">
+        <button class="btn btn-sm" id="ambito-extra-add" style="flex-shrink:0">+</button>
+      </div>
+      ${(d.ambitoExtra||'').trim()?`<div style="margin-top:6px;font-size:11px;color:#888">Voci personalizzate: ${d.ambitoExtra.split(',').filter(Boolean).map(a=>`<span style="background:#F1EFE8;color:#5F5E5A;padding:1px 6px;border-radius:100px;margin-right:3px">${a.trim()}</span>`).join('')}</div>`:'' }
     </div>
     <div class="form-group"><label class="form-label">Subtask</label>
       ${d.subtasks.map(s=>`<div class="modal-sub-item">
@@ -639,6 +646,23 @@ function bindEvents(){
   document.querySelectorAll('[data-delsub]').forEach(el=>{
     el.addEventListener('click',()=>{S.draft.subtasks=S.draft.subtasks.filter(s=>s.id!==el.dataset.delsub);render()});
   });
+  bind('ambito-extra-add','click',()=>{
+    const inp=document.getElementById('ambito-extra-input');
+    const voce=inp&&inp.value.trim();
+    if(!voce)return;
+    // Add as subtask if not already present
+    const exists=S.draft.subtasks.some(s=>s._ambitoExtra===voce);
+    if(!exists){
+      S.draft.subtasks=[...S.draft.subtasks,{id:uid(),text:voce,done:false,start:'',due:'',_ambitoExtra:voce}];
+    }
+    // Append to ambitoExtra string (comma-separated)
+    const current=(S.draft.ambitoExtra||'').split(',').map(s=>s.trim()).filter(Boolean);
+    if(!current.includes(voce))current.push(voce);
+    S.draft.ambitoExtra=current.join(', ');
+    inp.value='';
+    render();
+    setTimeout(()=>document.getElementById('ambito-extra-input')?.focus(),50);
+  });
   document.querySelectorAll('.ambito-check').forEach(el=>{
     el.addEventListener('change',()=>{
       const voce=el.dataset.ambito;
@@ -707,6 +731,7 @@ async function handleSave(){
   S.draft.priority=document.getElementById('f-priority')?.value||'';
   // ambito already synced live by checkbox listeners; just ensure array exists
   if(!S.draft.ambito)S.draft.ambito=[];
+  S.draft.ambitoExtra=document.getElementById('ambito-extra-input')?.value||'';
   const isEdit=S.modal&&S.modal.mode==='edit';
   const copy={...S.draft,subtasks:[...(S.draft.subtasks||[])]};
   const copyId=S.draft.id;
@@ -727,7 +752,7 @@ function addNote(){
   setTimeout(()=>{const i=document.getElementById('note-input');if(i)i.focus()},50);
 }
 
-function openNew(col){S.draft={col:col||'todo',title:'',tags:[],owner:S.owners[0].id,due:'',start:'',subtasks:[],dependsOn:'',notes:[],priority:'',ambito:[]};S.modal={mode:'new'};render();setTimeout(()=>document.getElementById('f-title')?.focus(),50)}
+function openNew(col){S.draft={col:col||'todo',title:'',tags:[],owner:S.owners[0].id,due:'',start:'',subtasks:[],dependsOn:'',notes:[],priority:'',ambito:[],ambitoExtra:''};S.modal={mode:'new'};render();setTimeout(()=>document.getElementById('f-title')?.focus(),50)}
 function openEdit(id){const card=S.cards.find(c=>c.id===id);if(!card)return;S.draft={...card,subtasks:card.subtasks.map(s=>({...s}))};S.modal={mode:'edit',id};render();setTimeout(()=>document.getElementById('f-title')?.focus(),50)}
 function toggleExp(id){S.expanded[id]=!S.expanded[id];render()}
 function toggleGanttExp(id){S.ganttExp[id]=!S.ganttExp[id];render()}
@@ -749,6 +774,7 @@ function downloadExcel(){
       'Owner *':ownerName(c.owner),
       'Priorita':c.priority||'',
       'Ambito':(c.ambito||[]).join(', '),
+      'Ambito extra':c.ambitoExtra||'',
       'Data inizio':c.start?c.start.split('-').reverse().join('/'):'',
       'Scadenza':c.due?c.due.split('-').reverse().join('/'):'',
       'Tag':(c.tags||[]).map(t=>tagById(t)?.label||t).join(', '),
