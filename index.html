@@ -747,6 +747,8 @@ function downloadExcel(){
       'Titolo *':c.title,
       'Colonna *':COLS.find(x=>x.id===c.col)?.title||c.col,
       'Owner *':ownerName(c.owner),
+      'Priorita':c.priority||'',
+      'Ambito':(c.ambito||[]).join(', '),
       'Data inizio':c.start?c.start.split('-').reverse().join('/'):'',
       'Scadenza':c.due?c.due.split('-').reverse().join('/'):'',
       'Tag':(c.tags||[]).map(t=>tagById(t)?.label||t).join(', '),
@@ -770,7 +772,7 @@ function downloadExcel(){
     const wb=XLSX.utils.book_new();
     const ws=XLSX.utils.json_to_sheet(rows);
     // Column widths
-    ws['!cols']=[{wch:28},{wch:14},{wch:13},{wch:13},{wch:13},{wch:14},{wch:28},...Array(15).fill({wch:13})];
+    ws['!cols']=[{wch:28},{wch:14},{wch:13},{wch:12},{wch:30},{wch:13},{wch:13},{wch:14},{wch:28},...Array(15).fill({wch:13})];
     XLSX.utils.book_append_sheet(wb,ws,'Progetti');
     const date=new Date().toISOString().slice(0,10);
     XLSX.writeFile(wb,`teamflow_${date}.xlsx`);
