@@ -225,6 +225,8 @@ function toFields(d){
     DependsOn:d.dependsOn||'',Notes:JSON.stringify(d.notes||[])};
   if(d.due)f.Due=d.due; else f.Due=null;
   if(d.start)f.Start=d.start; else f.Start=null;
+  if(d.priority)f.Priority=d.priority;
+  f.Ambito=JSON.stringify(d.ambito||[]);
   return f;
 }
 
@@ -246,7 +248,9 @@ async function fetchCards(){
         owner:rec.fields.Owner||'owner1',due:rec.fields.Due||'',start:rec.fields.Start||'',
         tags:(rec.fields.Tags||'').split(',').filter(Boolean),subtasks:subs,
         dependsOn:rec.fields.DependsOn||'',
-        notes:rec.fields.Notes?JSON.parse(rec.fields.Notes):[]};
+        notes:rec.fields.Notes?JSON.parse(rec.fields.Notes):[],
+        priority:rec.fields.Priority||'',
+        ambito:rec.fields.Ambito?JSON.parse(rec.fields.Ambito):[]};
     });
     S.error=null;
   }catch(e){S.error=e.message}
@@ -371,9 +375,11 @@ function buildCard(c){
       <div class="subtasks-list${exp?' open':''}">
         ${c.subtasks.map(s=>`<div class="sub-item${s.done?' done':''}"><div class="sub-check${s.done?' done':''}" data-cid="${c.id}" data-sid="${s.id}">${s.done?'✓':''}</div><span class="sub-text">${s.text}</span></div>`).join('')}
       </div></div>`:''}
+    ${c.ambito&&c.ambito.length?`<div style="display:flex;flex-wrap:wrap;gap:3px;margin-bottom:6px">${c.ambito.map(a=>`<span style="background:#F1EFE8;color:#5F5E5A;font-size:10px;padding:1px 6px;border-radius:100px;font-weight:500">${a}</span>`).join('')}</div>`:''}
     <div class="card-footer">
       <div class="owner-chip"><div class="mini-av" style="background:${o.bg};color:${o.color}">${o.initials}</div>${o.name}</div>
-      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:2px">
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:3px">
+        ${c.priority?`<span style="font-size:10px;font-weight:600;padding:1px 7px;border-radius:100px;${c.priority==='High'?'background:#FCEBEB;color:#A32D2D':c.priority==='Medium'?'background:#FAEEDA;color:#854F0B':'background:#EAF3DE;color:#3B6D11'}">${c.priority}</span>`:''}
         ${c.start?`<div style="font-size:10px;color:#aaa">▶ ${fmt(c.start)}</div>`:''}
         ${c.due?`<div class="date-chip${od?' date-overdue':''}">${od?'▲ ':''}${fmt(c.due)}</div>`:''}
       </div>
@@ -494,6 +500,21 @@ function buildModal(){
       <select class="form-input" id="f-dep"><option value="">— nessuna dipendenza —</option>${others.map(c=>`<option value="${c.id}"${d.dependsOn===c.id?' selected':''}>${c.title}</option>`).join('')}</select>
     </div>
     <div class="form-group"><label class="form-label">Tag</label><div class="tag-picker">${TAGS.map(t=>{const cs=tagCss(t.color);return`<div class="tag-opt${d.tags.includes(t.id)?' sel':''}" data-tag="${t.id}" style="background:${cs.bg};color:${cs.text}">${t.label}</div>`}).join('')}</div></div>
+    <div class="form-group">
+      <label class="form-label">Priorità</label>
+      <select class="form-input" id="f-priority">
+        <option value="">— nessuna —</option>
+        <option value="Low"${d.priority==='Low'?' selected':''}>Low</option>
+        <option value="Medium"${d.priority==='Medium'?' selected':''}>Medium</option>
+        <option value="High"${d.priority==='High'?' selected':''}>High</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Ambito</label>
+      <div style="display:flex;flex-wrap:wrap;gap:6px">
+        ${['Listino','SalesKit','Contract Docs','Formazione Interna','Product Definition/Description','Analisi/Ricerca','Articoli/Blog','Evento/Webinar','Campagne','Website','LoB/Cod. Art.','Comunicazione Interna'].map(a=>`<label style="display:flex;align-items:center;gap:5px;font-size:12px;cursor:pointer;padding:3px 8px;border:1px solid ${(d.ambito||[]).includes(a)?'#534AB7':'#e2e0d8'};border-radius:100px;background:${(d.ambito||[]).includes(a)?'#EEEDFE':'#fff'};color:${(d.ambito||[]).includes(a)?'#534AB7':'#555'};transition:all .12s"><input type="checkbox" class="ambito-check" data-ambito="${a}" ${(d.ambito||[]).includes(a)?'checked':''} style="accent-color:#534AB7;width:12px;height:12px">${a}</label>`).join('')}
+      </div>
+    </div>
     <div class="form-group"><label class="form-label">Subtask</label>
       ${d.subtasks.map(s=>`<div class="modal-sub-item">
         <div class="modal-sub-check${s.done?' done':''}" data-sid="${s.id}">${s.done?'✓':''}</div>
@@ -660,6 +681,8 @@ async function handleSave(){
   S.draft.start=document.getElementById('f-start')?.value||'';
   S.draft.due=document.getElementById('f-due')?.value||'';
   S.draft.dependsOn=document.getElementById('f-dep')?.value||'';
+  S.draft.priority=document.getElementById('f-priority')?.value||'';
+  S.draft.ambito=Array.from(document.querySelectorAll('.ambito-check:checked')).map(el=>el.dataset.ambito);
   const isEdit=S.modal&&S.modal.mode==='edit';
   const copy={...S.draft,subtasks:[...(S.draft.subtasks||[])]};
   const copyId=S.draft.id;
@@ -680,7 +703,7 @@ function addNote(){
   setTimeout(()=>{const i=document.getElementById('note-input');if(i)i.focus()},50);
 }
 
-function openNew(col){S.draft={col:col||'todo',title:'',tags:[],owner:S.owners[0].id,due:'',start:'',subtasks:[],dependsOn:'',notes:[]};S.modal={mode:'new'};render();setTimeout(()=>document.getElementById('f-title')?.focus(),50)}
+function openNew(col){S.draft={col:col||'todo',title:'',tags:[],owner:S.owners[0].id,due:'',start:'',subtasks:[],dependsOn:'',notes:[],priority:'',ambito:[]};S.modal={mode:'new'};render();setTimeout(()=>document.getElementById('f-title')?.focus(),50)}
 function openEdit(id){const card=S.cards.find(c=>c.id===id);if(!card)return;S.draft={...card,subtasks:card.subtasks.map(s=>({...s}))};S.modal={mode:'edit',id};render();setTimeout(()=>document.getElementById('f-title')?.focus(),50)}
 function toggleExp(id){S.expanded[id]=!S.expanded[id];render()}
 function toggleGanttExp(id){S.ganttExp[id]=!S.ganttExp[id];render()}
