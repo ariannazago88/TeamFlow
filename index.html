@@ -7,19 +7,19 @@
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#F1EFE8;color:#1a1a1a;min-height:100vh}
-:root{--purple:#534AB7;--purple-light:#EEEDFE;--purple-dark:#3C3489;--teal:#0F6E56;--teal-light:#E1F5EE;--blue:#185FA5;--blue-light:#E6F1FB;--amber:#854F0B;--red:#A32D2D;--red-light:#FCEBEB;--border:#e2e0d8;--surface:#F7F6F2}
-.topbar{display:flex;align-items:center;justify-content:space-between;padding:13px 20px;background:#fff;border-bottom:1px solid var(--border);gap:12px;position:sticky;top:0;z-index:20}
-.logo{font-size:15px;font-weight:600;color:var(--purple);letter-spacing:-.3px;display:flex;align-items:center;gap:7px}
-.logo-sq{width:22px;height:22px;background:var(--purple);border-radius:5px;display:flex;align-items:center;justify-content:center}
-.logo-sq svg{width:13px;height:13px;fill:#fff}
+:root{--purple:#6B5AED;--purple-light:#EEEAFF;--purple-dark:#4A3CC7;--teal:#0F6E56;--teal-light:#E1F5EE;--blue:#0073EA;--blue-light:#E5F2FF;--amber:#854F0B;--red:#D83A52;--red-light:#FFE5EA;--border:#E0E0E0;--surface:#F5F6F8;--topbar:#1A1C2E}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:0 20px;background:var(--topbar);border-bottom:none;gap:12px;position:sticky;top:0;z-index:20;height:52px}
+.logo{font-size:16px;font-weight:700;color:#fff;letter-spacing:-.4px;display:flex;align-items:center;gap:8px}
+.logo-sq{width:26px;height:26px;background:#6B5AED;border-radius:6px;display:flex;align-items:center;justify-content:center}
+.logo-sq svg{width:14px;height:14px;fill:#fff}
 .topbar-right{display:flex;align-items:center;gap:8px}
 .avatars{display:flex}
 .av{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;border:2px solid #fff;margin-left:-7px;flex-shrink:0;cursor:default;position:relative}
 .av:first-child{margin-left:0}
 .av[data-name]:hover::after{content:attr(data-name);position:absolute;bottom:calc(100% + 5px);left:50%;transform:translateX(-50%);background:#1a1a1a;color:#fff;font-size:11px;padding:3px 8px;border-radius:5px;white-space:nowrap;pointer-events:none;z-index:99}
-.view-toggle{display:flex;border:1px solid var(--border);border-radius:8px;overflow:hidden;background:#fff}
-.view-btn{padding:6px 12px;font-size:12px;font-weight:500;cursor:pointer;border:none;background:transparent;color:#888;font-family:inherit;transition:all .12s}
-.view-btn.active{background:var(--purple);color:#fff}
+.view-toggle{display:flex;border:1px solid rgba(255,255,255,.2);border-radius:8px;overflow:hidden;background:rgba(255,255,255,.08)}
+.view-btn{padding:6px 12px;font-size:12px;font-weight:500;cursor:pointer;border:none;background:transparent;color:rgba(255,255,255,.65);font-family:inherit;transition:all .12s}
+.view-btn.active{background:rgba(255,255,255,.2);color:#fff}
 .btn{border:1px solid #d0cec8;background:#fff;color:#1a1a1a;padding:7px 14px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:500;display:inline-flex;align-items:center;gap:5px;font-family:inherit;transition:all .12s}
 .btn:hover{background:#f5f4f0}
 .btn-primary{background:var(--purple);color:#fff;border-color:var(--purple)}
@@ -31,19 +31,19 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .btn-danger:hover{background:var(--red-light)}
 .config-bar{background:var(--purple-light);border-bottom:1px solid #c4c0f0;padding:10px 20px;display:flex;align-items:center;gap:8px;font-size:13px;color:var(--purple-dark)}
 .dash-row{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;padding:16px 20px 0}
-.stat{background:#fff;border:1px solid var(--border);border-radius:10px;padding:12px 16px}
-.stat-label{font-size:11px;color:#888;margin-bottom:4px;text-transform:uppercase;letter-spacing:.05em;font-weight:500}
-.stat-val{font-size:24px;font-weight:600}
-.board{display:flex;gap:12px;padding:16px 20px 24px;overflow-x:auto;align-items:flex-start}
-.col{width:276px;flex-shrink:0;background:var(--surface);border-radius:12px;border:1px solid var(--border);display:flex;flex-direction:column}
-.col-head{padding:12px 14px;display:flex;align-items:center;gap:8px;flex-shrink:0}
+.stat{background:#fff;border:1px solid #E8E8E8;border-radius:10px;padding:14px 18px;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+.stat-label{font-size:11px;color:#888;margin-bottom:4px;text-transform:uppercase;letter-spacing:.06em;font-weight:600}
+.stat-val{font-size:26px;font-weight:700;letter-spacing:-.5px}
+.board{display:flex;gap:14px;padding:18px 22px 28px;overflow-x:auto;align-items:flex-start;background:#F5F6F8;min-height:calc(100vh - 130px)}
+.col{width:276px;flex-shrink:0;background:#fff;border-radius:12px;border:1px solid #E0E0E0;display:flex;flex-direction:column;box-shadow:0 1px 4px rgba(0,0,0,.04)}
+.col-head{padding:12px 14px;display:flex;align-items:center;gap:8px;flex-shrink:0;border-radius:12px 12px 0 0}
 .col-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
-.col-title{font-size:13px;font-weight:600;flex:1}
-.col-count{font-size:11px;color:#888;background:#fff;border:1px solid var(--border);border-radius:100px;padding:1px 7px;font-weight:500}
-.col-body{padding:0 8px 8px;min-height:80px}
+.col-title{font-size:13px;font-weight:700;flex:1;letter-spacing:-.2px}
+.col-count{font-size:11px;color:#666;background:#F0F0F0;border:none;border-radius:100px;padding:2px 8px;font-weight:600}
+.col-body{padding:0 8px 8px;min-height:80px;background:#fff}
 .col-body.drag-over{background:rgba(83,74,183,.08);border-radius:8px;outline:2px dashed #AFA9EC;outline-offset:-4px}
-.card{background:#fff;border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:8px;cursor:grab;transition:border-color .15s,box-shadow .15s;user-select:none}
-.card:hover{border-color:#b8b6c8;box-shadow:0 2px 8px rgba(0,0,0,.06)}
+.card{background:#fff;border:1px solid #EBEBEB;border-radius:8px;padding:11px 12px;margin-bottom:7px;cursor:grab;transition:border-color .15s,box-shadow .15s;user-select:none;border-left:3px solid transparent}
+.card:hover{border-color:#d0cfe8;box-shadow:0 2px 10px rgba(0,0,0,.08)}
 .card:active{cursor:grabbing}
 .card.dragging{opacity:.4;transform:scale(.96)}
 .card.done-card .card-title{color:#888;text-decoration:line-through}
@@ -82,7 +82,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .gantt-legend{display:flex;flex-wrap:wrap;gap:10px;margin-left:auto}
 .gantt-legend-item{display:flex;align-items:center;gap:5px;font-size:11px;color:#666}
 .gantt-legend-dot{width:10px;height:10px;border-radius:3px}
-.gantt-container{background:#fff;border:1px solid var(--border);border-radius:12px;overflow:auto}
+.gantt-container{background:#fff;border:1px solid var(--border);border-radius:12px;overflow:auto;max-height:calc(100vh - 200px)}
 .gantt-inner{display:inline-flex;flex-direction:column;min-width:100%}
 .gantt-header{display:flex;border-bottom:1px solid var(--border);position:sticky;top:0;z-index:5;background:#fff}
 .gantt-label-col{width:230px;flex-shrink:0;padding:10px 14px;font-size:11px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:.05em;border-right:1px solid var(--border);background:var(--surface)}
@@ -163,7 +163,9 @@ const COLS=[
   {id:'doing',  title:'In corso', color:'#185FA5'},
   {id:'blocked',title:'Bloccate', color:'#A32D2D'},
   {id:'done',   title:'Fatto',    color:'#0F6E56'},
+  {id:'dead',   title:'Dead',     color:'#444441'},
 ];
+const GANTT_COLS=['todo','doing','blocked','done']; // dead excluded from gantt
 const DEFAULT_TAGS=[
   {id:'design', label:'design',    color:'#7F77DD'},
   {id:'dev',    label:'dev',       color:'#378ADD'},
@@ -186,7 +188,7 @@ function apiHeaders(){const c=getCfg();return{'Authorization':`Bearer ${c.token}
 
 const DEFAULT_AMBITI=['Listino','SalesKit','Contract Docs','Formazione Interna','Product Definition/Description','Analisi/Ricerca','Articoli/Blog','Evento/Webinar','Campagne','Website','LoB/Cod. Art.','Comunicazione Interna'];
 let AMBITI=[...DEFAULT_AMBITI];
-let S={cards:[],owners:[...DEFAULT_OWNERS],loading:true,error:null,modal:null,expanded:{},ganttExp:{},view:'board',draft:null,ganttStart:'',ganttEnd:'',ownerFilter:null,searchQ:'',dashStart:'',dashEnd:''};
+let S={cards:[],owners:[...DEFAULT_OWNERS],loading:true,error:null,modal:null,expanded:{},ganttExp:{},view:'board',draft:null,ganttStart:'',ganttEnd:'',ownerFilter:null,tagFilter:null,searchQ:'',dashStart:'',dashEnd:''};
 let dragSrcId=null;
 
 function uid(){return 'x'+Math.random().toString(36).slice(2,9)}
@@ -329,7 +331,7 @@ function buildHTML(){
   return`${buildTopbar()}
   ${!isConfigured()?`<div class="config-bar"><span>⚡ Configura Airtable per sincronizzare i dati →</span><button class="btn btn-sm btn-primary" onclick="setView('settings')">Configura ora</button></div>`:''}
   ${S.error?`<div class="error-banner">⚠ Errore: ${S.error} <button class="btn btn-sm" onclick="fetchCards()" style="margin-left:8px">Riprova</button></div>`:''}
-  ${S.view==='board'?`<div style="padding:12px 20px 0;background:#fff;border-bottom:1px solid #f0efe9"><div style="position:relative;max-width:360px"><svg style="position:absolute;left:10px;top:50%;transform:translateY(-50%);pointer-events:none;color:#aaa" width="14" height="14" viewBox="0 0 16 16" fill="none"><circle cx="7" cy="7" r="5" stroke="currentColor" stroke-width="1.5"/><path d="M11 11l3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg><input id="search-input" type="text" value="${S.searchQ}" placeholder="Cerca card..." oninput="S.searchQ=this.value;render()" style="width:100%;padding:7px 10px 7px 30px;border:1px solid #e2e0d8;border-radius:8px;font-size:13px;font-family:inherit;background:#f7f6f2;color:#1a1a1a;outline:none" onfocus="this.style.background='#fff';this.style.borderColor='#534AB7'" onblur="this.style.background='#f7f6f2';this.style.borderColor='#e2e0d8'">${S.searchQ?`<button onclick="S.searchQ='';render()" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);border:none;background:none;cursor:pointer;color:#aaa;font-size:14px;padding:0">✕</button>`:''}</div></div>`:'' }
+  ${S.view==='board'?`<div style="padding:12px 20px 0;background:#fff;border-bottom:1px solid #f0efe9"><div style="position:relative;max-width:360px"><svg style="position:absolute;left:10px;top:50%;transform:translateY(-50%);pointer-events:none;color:#aaa" width="14" height="14" viewBox="0 0 16 16" fill="none"><circle cx="7" cy="7" r="5" stroke="currentColor" stroke-width="1.5"/><path d="M11 11l3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg><input id="search-input" type="text" value="${S.searchQ}" placeholder="Cerca card..." style="width:100%;padding:7px 10px 7px 30px;border:1px solid #e2e0d8;border-radius:8px;font-size:13px;font-family:inherit;background:#f7f6f2;color:#1a1a1a;outline:none" onfocus="this.style.background='#fff';this.style.borderColor='#534AB7'" onblur="this.style.background='#f7f6f2';this.style.borderColor='#e2e0d8'">${S.searchQ?`<button onclick="S.searchQ='';render()" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);border:none;background:none;cursor:pointer;color:#aaa;font-size:14px;padding:0">✕</button>`:''}</div></div>`:'' }
   ${S.view==='settings'?buildSettings():S.view==='gantt'?buildGantt():S.view==='dashboard'?buildDashboard():buildBoard(total,done,overdue,inprog)}
   ${S.modal?buildModal():''}`;
 }
@@ -339,18 +341,18 @@ function buildTopbar(){
   return`<div class="topbar">
     <div class="logo"><div class="logo-sq"><svg viewBox="0 0 13 13"><rect x="1" y="1" width="4" height="4" rx="1"/><rect x="1" y="7" width="4" height="4" rx="1"/><rect x="7" y="1" width="4" height="4" rx="1"/><rect x="7" y="7" width="4" height="4" rx="1"/></svg></div>TeamFlow</div>
     <div class="topbar-right">
-      <div class="avatars" id="owner-avatars">${S.owners.map(o=>`<div class="av" data-name="${o.name}" data-oid="${o.id}" onclick="toggleOwnerFilter('${o.id}')" style="background:${o.bg};color:${o.color};cursor:pointer;outline:${S.ownerFilter===o.id?'3px solid '+o.color:'none'};outline-offset:2px;transition:outline .15s">${o.initials}</div>`).join('')}</div>
+      <div class="avatars" id="owner-avatars">${S.owners.map(o=>`<div class="av" data-name="${o.name}" data-oid="${o.id}" onclick="toggleOwnerFilter('${o.id}')" style="background:${o.bg};color:${o.color};cursor:pointer;box-shadow:${S.ownerFilter===o.id?'0 0 0 3px #fff,0 0 0 5px '+o.color:'none'};transition:box-shadow .15s">${o.initials}</div>`).join('')}</div>
       ${v!=='settings'?`<div class="view-toggle">
         <button class="view-btn${v==='board'?' active':''}" onclick="setView('board')">Kanban</button>
         <button class="view-btn${v==='gantt'?' active':''}" onclick="setView('gantt')">Gantt</button>
         <button class="view-btn${v==='dashboard'?' active':''}" onclick="setView('dashboard')">Dashboard</button>
       </div>`:''}
-      ${isConfigured()?`<button class="btn btn-sm btn-ghost" onclick="boot()" title="Aggiorna">↻</button>`:''}
-      ${v==='gantt'?`<button class="btn btn-sm btn-ghost" onclick="downloadGanttPng()" title="Scarica PNG">⬇ PNG</button>`:''}
-      ${v==='dashboard'?`<button class="btn btn-sm btn-ghost" onclick="downloadDashboardPng()" title="Scarica PNG">⬇ PNG</button>`:''}
-      ${v!=='settings'&&isConfigured()?`<button class="btn btn-sm btn-ghost" onclick="downloadExcel()">⬇ Excel</button><label class="btn btn-sm btn-ghost" style="cursor:pointer">⬆ Importa<input type="file" accept=".xlsx" style="display:none" onchange="importExcel(this)"></label>`:''}
-      <button class="btn btn-sm btn-ghost" onclick="setView('settings')">⚙</button>
-      ${v==='board'&&isConfigured()?`<button class="btn btn-primary btn-sm" onclick="openNew()">+ Nuova card</button>`:''}
+      ${isConfigured()?`<button class="btn btn-sm" style="background:rgba(255,255,255,.1);color:#fff;border-color:rgba(255,255,255,.2)" onclick="boot()" title="Aggiorna">↻</button>`:''}
+      ${v==='gantt'?`<button class="btn btn-sm" style="background:rgba(255,255,255,.1);color:#fff;border-color:rgba(255,255,255,.2)" onclick="downloadGanttPng()">⬇ PNG</button>`:''}
+      ${v==='dashboard'?`<button class="btn btn-sm" style="background:rgba(255,255,255,.1);color:#fff;border-color:rgba(255,255,255,.2)" onclick="downloadDashboardPng()">⬇ PNG</button>`:''}
+      ${v!=='settings'&&isConfigured()?`<button class="btn btn-sm" style="background:rgba(255,255,255,.1);color:#fff;border-color:rgba(255,255,255,.2)" onclick="downloadExcel()">⬇ Excel</button><label class="btn btn-sm" style="background:rgba(255,255,255,.1);color:#fff;border-color:rgba(255,255,255,.2);cursor:pointer">⬆ Importa<input type="file" accept=".xlsx" style="display:none" onchange="importExcel(this)"></label>`:''}
+      <button class="btn btn-sm" style="background:rgba(255,255,255,.1);color:#fff;border-color:rgba(255,255,255,.2)" onclick="setView('settings')">⚙</button>
+      ${v==='board'&&isConfigured()?`<button class="btn btn-primary btn-sm" style="background:#6B5AED;border-color:#6B5AED" onclick="openNew()">+ Nuova card</button>`:''}
     </div>
   </div>`;
 }
@@ -358,6 +360,7 @@ function buildTopbar(){
 function buildBoard(total,done,overdue,inprog){
   if(S.loading)return`<div class="loading"><div class="spinner"></div> Carico da Airtable...</div>`;
   let visibleCards=S.ownerFilter?S.cards.filter(c=>c.owner===S.ownerFilter):S.cards;
+  if(S.tagFilter)visibleCards=visibleCards.filter(c=>(c.tags||[]).includes(S.tagFilter));
   if(S.searchQ){
     const q=S.searchQ.toLowerCase();
     visibleCards=visibleCards.filter(c=>
@@ -371,7 +374,11 @@ function buildBoard(total,done,overdue,inprog){
     <span>Filtro: <strong>${ownerById(S.ownerFilter).name}</strong> — ${visibleCards.length} card</span>
     <button class="btn btn-sm" onclick="toggleOwnerFilter(null)" style="padding:2px 8px;font-size:11px">✕ rimuovi filtro</button>
   </div>`:''
-  return filterBanner+`<div class="board" id="board">
+  const tagBanner=S.tagFilter?(()=>{const tg=tagById(S.tagFilter);const cs=tg?tagCss(tg.color):{bg:'#F1EFE8',text:'#555'};return`<div style="background:${cs.bg};border-bottom:1px solid rgba(0,0,0,.06);padding:7px 20px;font-size:12px;color:${cs.text};display:flex;align-items:center;gap:8px"><span style="font-weight:500">${tg?tg.label:S.tagFilter}</span><span style="opacity:.7">— ${visibleCards.length} card</span><button onclick="S.tagFilter=null;render()" style="margin-left:auto;border:none;background:rgba(0,0,0,.08);color:inherit;cursor:pointer;border-radius:4px;padding:1px 7px;font-size:11px">✕</button></div>`;})():'';
+  // Clickable tag legend for kanban
+  const allUsedTags=[...new Set(S.cards.flatMap(c=>c.tags||[]))];
+  const tagLegend=allUsedTags.length?`<div style="padding:6px 20px;background:#fff;border-bottom:1px solid #f0efe9;display:flex;flex-wrap:wrap;gap:5px;align-items:center"><span style="font-size:11px;color:#aaa;margin-right:4px">TAG:</span>${allUsedTags.map(tid=>{const tg=tagById(tid);if(!tg)return'';const cs=tagCss(tg.color);return`<div onclick="toggleTagFilter('${tid}')" style="cursor:pointer;display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:100px;font-size:11px;font-weight:500;background:${S.tagFilter===tid?tg.color:cs.bg};color:${S.tagFilter===tid?'#fff':cs.text};border:1.5px solid ${S.tagFilter===tid?tg.color:'transparent'};transition:all .12s">${tg.label}</div>`;}).join('')}</div>`:''
+  return filterBanner+tagBanner+tagLegend+`<div class="board" id="board">
     ${COLS.map(col=>{
       const colCards=sortCardsByDue(visibleCards.filter(c=>c.col===col.id));
       return`<div class="col">
@@ -387,7 +394,8 @@ function buildCard(c){
   const o=ownerById(c.owner),ratio=doneRatio(c.subtasks),od=isOverdue(c.due)&&c.col!=='done',exp=S.expanded[c.id];
   const dep=c.dependsOn?cardById(c.dependsOn):null,depBlocked=dep&&dep.col!=='done';
   const pct=ratio?Math.round(ratio.d/ratio.t*100):0;
-  return`<div class="card${c.col==='done'?' done-card':''}" data-id="${c.id}" draggable="true">
+  const colColor=(COLS.find(x=>x.id===c.col)||{}).color||'#888';
+  return`<div class="card${c.col==='done'?' done-card':''}" data-id="${c.id}" draggable="true" style="border-left-color:${colColor}">
     <div class="card-top"><div class="card-title">${c.title}</div><button class="card-edit" onclick="openEdit('${c.id}')">⋯</button></div>
     ${c.tags.length?`<div class="tags">${c.tags.map(t=>{const tg=tagById(t);if(!tg)return'';const cs=tagCss(tg.color);return`<span class="tag" style="background:${cs.bg};color:${cs.text}">${tg.label}</span>`}).join('')}</div>`:''}
     ${dep?`<div class="dep-badge${depBlocked?' blocked':''}" title="${dep.title}">⟶ ${dep.title.length>24?dep.title.slice(0,24)+'…':dep.title}</div>`:''}
@@ -550,8 +558,9 @@ function buildGantt(){
   const W=totalDays*DAY_W;
   // For dense views (DAY_W < 10), only show month markers not individual days
   const dense=DAY_W<10;
-  const visible=S.cards.filter(c=>c.start&&c.due&&c.start<=re&&c.due>=rs);
-  const visibleGantt=S.ownerFilter?visible.filter(c=>c.owner===S.ownerFilter):visible;
+  const visible=S.cards.filter(c=>c.col!=='dead'&&c.start&&c.due&&c.start<=re&&c.due>=rs);
+  let visibleGantt=S.ownerFilter?visible.filter(c=>c.owner===S.ownerFilter):visible;
+  if(S.tagFilter)visibleGantt=visibleGantt.filter(c=>(c.tags||[]).includes(S.tagFilter));
   const usedTags=new Set(visibleGantt.flatMap(c=>c.tags));
   const NM=['Gen','Feb','Mar','Apr','Mag','Giu','Lug','Ago','Set','Ott','Nov','Dic'];
 
@@ -622,7 +631,7 @@ function buildGantt(){
       <button class="btn btn-sm" id="gantt-6m">6 mesi</button>
       <button class="btn btn-sm" id="gantt-1y">1 anno</button>
       <button class="btn btn-sm" id="gantt-fit" title="Adatta alla larghezza dello schermo">⟷ Adatta</button>
-      <div class="gantt-legend">${TAGS.filter(t=>usedTags.has(t.id)).map(t=>`<div class="gantt-legend-item"><div class="gantt-legend-dot" style="background:${t.color}"></div>${t.label}</div>`).join('')}</div>
+      <div class="gantt-legend">${TAGS.filter(t=>usedTags.has(t.id)).map(t=>`<div class="gantt-legend-item" onclick="toggleTagFilter('${t.id}')" style="cursor:pointer;padding:2px 8px;border-radius:100px;border:1.5px solid ${S.tagFilter===t.id?t.color:'transparent'};background:${S.tagFilter===t.id?tagCss(t.color).bg:'transparent'};transition:all .12s"><div class="gantt-legend-dot" style="background:${t.color}"></div>${t.label}</div>`).join('')}${S.tagFilter?`<button onclick="S.tagFilter=null;render()" style="font-size:11px;border:none;background:none;cursor:pointer;color:#888;margin-left:4px">✕</button>`:''}</div>
     </div>
     <div class="gantt-container">
       <div class="gantt-inner">
@@ -776,7 +785,18 @@ function bindEvents(){
     col.addEventListener('drop',async e=>{
       e.preventDefault();col.classList.remove('drag-over');if(!dragSrcId)return;
       const card=S.cards.find(c=>c.id===dragSrcId);
-      if(card&&card.col!==colId){card.col=colId;render();try{await updateCard(card.id,card)}catch(err){toast('Errore: '+err.message)}}
+      if(card&&card.col!==colId){
+        // Block move to 'done' if card has subtasks and not all completed
+        if(colId==='done'&&card.subtasks&&card.subtasks.length>0){
+          const allDone=card.subtasks.every(s=>s.done);
+          if(!allDone){
+            const nd=card.subtasks.filter(s=>!s.done).length;
+            toast('⚠ Completa i subtask prima di spostare in Fatto ('+nd+' ancora aperti)');
+            dragSrcId=null;return;
+          }
+        }
+        card.col=colId;render();try{await updateCard(card.id,card)}catch(err){toast('Errore: '+err.message)}
+      }
       dragSrcId=null;
     });
   });
@@ -793,6 +813,16 @@ function bindEvents(){
   bind('del-btn','click',async()=>{if(confirm('Eliminare questa card?'))await deleteCard(S.modal.id)});
   bind('sub-add-btn','click',addSubtask);
   bind('sub-input','keydown',e=>{if(e.key==='Enter')addSubtask()});
+  // Search with debounce so typing is fluid
+  let _searchTimer=null;
+  const searchEl=document.getElementById('search-input');
+  if(searchEl){
+    searchEl.addEventListener('input',()=>{
+      clearTimeout(_searchTimer);
+      _searchTimer=setTimeout(()=>{S.searchQ=searchEl.value;render();setTimeout(()=>{const el=document.getElementById('search-input');if(el){el.focus();el.setSelectionRange(el.value.length,el.value.length)}},0)},250);
+    });
+    searchEl.addEventListener('keydown',e=>{if(e.key==='Escape'){S.searchQ='';render()}});
+  }
   bind('note-add-btn','click',addNote);
   bind('note-input','keydown',e=>{if(e.key==='Enter'&&e.ctrlKey)addNote()});
   document.querySelectorAll('[data-delnote]').forEach(el=>{
@@ -1125,6 +1155,7 @@ function importExcel(input){
 }
 
 
+function toggleTagFilter(tid){S.tagFilter=S.tagFilter===tid?null:tid;render()}
 function toggleOwnerFilter(oid){
   S.ownerFilter=S.ownerFilter===oid?null:oid;
   render();
