@@ -582,7 +582,7 @@ function buildGantt(){
 
   const rows=visibleGantt.map(c=>{
     const color=tagBar(c.tags),{l,w}=bp(c.start,c.due),exp=S.ganttExp[c.id];
-    const hasSubs=c.subtasks&&c.subtasks.some(s=>s.start&&s.due);
+    const hasSubs=c.subtasks&&c.subtasks.some(s=>s.start||s.due);
     const o=ownerById(c.owner);
     let html=`<div class="gantt-row task-row">
       <div class="gantt-task-label" onclick="${hasSubs?`toggleGanttExp('${c.id}')`:''}" style="${hasSubs?'cursor:pointer':''}">
@@ -594,12 +594,14 @@ function buildGantt(){
       </div>
     </div>`;
     if(exp){
-      c.subtasks.filter(s=>s.start&&s.due&&s.start<=re&&s.due>=rs).forEach(s=>{
-        const{l:sl,w:sw}=bp(s.start,s.due);
+      c.subtasks.filter(s=>s.start||s.due).forEach(s=>{
+        const subStart=s.start||rs,subDue=s.due||re;
+        const{l:sl,w:sw}=bp(subStart,subDue);
+        const inPeriod=subStart<=re&&subDue>=rs;
         html+=`<div class="gantt-row sub-row">
-          <div class="gantt-task-label"><div class="gantt-sub-name">↳ ${s.text}</div><div style="font-size:10px;color:#aaa">${fmt(s.start)} → ${fmt(s.due)}</div></div>
+          <div class="gantt-task-label"><div class="gantt-sub-name">↳ ${s.text}</div><div style="font-size:10px;color:#aaa">${s.start?fmt(s.start):'?'} → ${s.due?fmt(s.due):'?'}</div></div>
           <div class="gantt-track" style="width:${W}px;height:30px;position:relative;overflow:hidden">${grid}
-            <div style="position:absolute;left:${sl+1}px;width:${sw-2}px;height:10px;top:50%;transform:translateY(-50%);background:${color};border-radius:2px;opacity:.65" title="${s.text}"></div>
+            ${inPeriod?`<div style="position:absolute;left:${sl+1}px;width:${sw-2}px;height:10px;top:50%;transform:translateY(-50%);background:${color};border-radius:2px;opacity:${s.start&&s.due?'.65':'.35'}" title="${s.text}${!s.start?' (inizio non impostato)':''}${!s.due?' (fine non impostata)':''}"></div>`:'<div style="position:absolute;left:0;right:0;top:50%;height:1px;background:#ddd;transform:translateY(-50%)" title="'+s.text+' — fuori dal periodo"></div>'}
           </div>
         </div>`;
       });
