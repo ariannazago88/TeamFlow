@@ -544,8 +544,9 @@ function buildGantt(){
   const rs=S.ganttStart||todayStr(),re=S.ganttEnd||addDays(todayStr(),30);
   const totalDays=diffDays(rs,re)+1;
   // Responsive: fit all days into ~760px track width, min 4px, max 36px
-  const TRACK_W=760;
-  const DAY_W=Math.max(4,Math.min(36,Math.floor(TRACK_W/totalDays)));
+  // Calcola larghezza disponibile: viewport - label col (230) - padding (40)
+  const availW=Math.max(400,(typeof window!=='undefined'?window.innerWidth:1200)-230-40);
+  const DAY_W=Math.max(3,Math.min(36,Math.floor(availW/totalDays)));
   const W=totalDays*DAY_W;
   // For dense views (DAY_W < 10), only show month markers not individual days
   const dense=DAY_W<10;
@@ -618,6 +619,7 @@ function buildGantt(){
       <button class="btn btn-sm" id="gantt-3m">3 mesi</button>
       <button class="btn btn-sm" id="gantt-6m">6 mesi</button>
       <button class="btn btn-sm" id="gantt-1y">1 anno</button>
+      <button class="btn btn-sm" id="gantt-fit" title="Adatta alla larghezza dello schermo">⟷ Adatta</button>
       <div class="gantt-legend">${TAGS.filter(t=>usedTags.has(t.id)).map(t=>`<div class="gantt-legend-item"><div class="gantt-legend-dot" style="background:${t.color}"></div>${t.label}</div>`).join('')}</div>
     </div>
     <div class="gantt-container">
@@ -642,7 +644,7 @@ function buildModal(){
     <div class="modal-title">${isEdit?'Modifica card':'Nuova card'}</div>
     <div class="form-group"><label class="form-label">Titolo</label><input class="form-input" id="f-title" type="text" value="${d.title}" placeholder="Nome del task..."></div>
     <div class="form-row-2">
-      <div class="form-group"><label class="form-label">Colonna</label><select class="form-input" id="f-col">${COLS.map(c=>`<option value="${c.id}"${d.col===c.id?' selected':''}>${c.title}</option>`).join('')}</select></div>
+      <div class="form-group"><label class="form-label">Stato</label><select class="form-input" id="f-col">${COLS.map(c=>`<option value="${c.id}"${d.col===c.id?' selected':''}>${c.title}</option>`).join('')}</select></div>
       <div class="form-group"><label class="form-label">Owner</label><select class="form-input" id="f-owner">${S.owners.map(o=>`<option value="${o.id}"${d.owner===o.id?' selected':''}>${o.name}</option>`).join('')}</select></div>
     </div>
     <div class="form-row-2">
@@ -884,6 +886,7 @@ function bindEvents(){
   bind('gantt-3m','click',()=>{S.ganttStart=todayStr();S.ganttEnd=addDays(todayStr(),90);render()});
   bind('gantt-6m','click',()=>{S.ganttStart=todayStr();S.ganttEnd=addDays(todayStr(),180);render()});
   bind('gantt-1y','click',()=>{S.ganttStart=todayStr();S.ganttEnd=addDays(todayStr(),365);render()});
+  bind('gantt-fit','click',()=>render()); // force re-render with current viewport width
   // Dashboard date controls
   const dsi=document.getElementById('dash-start-input');
   if(dsi)dsi.addEventListener('change',()=>{S.dashStart=dsi.value;render()});
@@ -953,7 +956,7 @@ function downloadExcel(){
     const ownerName=id=>ownerById(id)?.name||id;
     const rows=S.cards.map(c=>({
       'Titolo *':c.title,
-      'Colonna *':COLS.find(x=>x.id===c.col)?.title||c.col,
+      'Stato *':COLS.find(x=>x.id===c.col)?.title||c.col,
       'Owner *':ownerName(c.owner),
       'Priorita':c.priority||'',
       'Ambito':(c.ambito||[]).join(', '),
@@ -1049,7 +1052,7 @@ function importExcel(input){
 
         const data={
           title,
-          col:colMap[String(row['Colonna *']||'Da fare').trim()]||'todo',
+          col:colMap[String(row['Stato *']||row['Stato *']||'Da fare').trim()]||'todo',
           owner:ownerMap[String(row['Owner *']||'').trim()]||S.owners[0].id,
           start:fmtD(row['Data inizio']),
           due:fmtD(row['Scadenza']),
