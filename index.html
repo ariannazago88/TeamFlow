@@ -1112,25 +1112,30 @@ function downloadExcel(){
       'Tag':(c.tags||[]).map(t=>tagById(t)?.label||t).join(', '),
       'Dipende da':c.dependsOn?S.cards.find(x=>x.id===c.dependsOn)?.title||'':'',
       'Subtask 1':c.subtasks[0]?.text||'',
+      'Owner sub 1':c.subtasks[0]?ownerName(c.subtasks[0].owner||c.owner):'',
       'Inizio sub 1':c.subtasks[0]?.start?c.subtasks[0].start.split('-').reverse().join('/'):'',
       'Scadenza sub 1':c.subtasks[0]?.due?c.subtasks[0].due.split('-').reverse().join('/'):'',
       'Subtask 2':c.subtasks[1]?.text||'',
+      'Owner sub 2':c.subtasks[1]?ownerName(c.subtasks[1].owner||c.owner):'',
       'Inizio sub 2':c.subtasks[1]?.start?c.subtasks[1].start.split('-').reverse().join('/'):'',
       'Scadenza sub 2':c.subtasks[1]?.due?c.subtasks[1].due.split('-').reverse().join('/'):'',
       'Subtask 3':c.subtasks[2]?.text||'',
+      'Owner sub 3':c.subtasks[2]?ownerName(c.subtasks[2].owner||c.owner):'',
       'Inizio sub 3':c.subtasks[2]?.start?c.subtasks[2].start.split('-').reverse().join('/'):'',
       'Scadenza sub 3':c.subtasks[2]?.due?c.subtasks[2].due.split('-').reverse().join('/'):'',
       'Subtask 4':c.subtasks[3]?.text||'',
+      'Owner sub 4':c.subtasks[3]?ownerName(c.subtasks[3].owner||c.owner):'',
       'Inizio sub 4':c.subtasks[3]?.start?c.subtasks[3].start.split('-').reverse().join('/'):'',
       'Scadenza sub 4':c.subtasks[3]?.due?c.subtasks[3].due.split('-').reverse().join('/'):'',
       'Subtask 5':c.subtasks[4]?.text||'',
+      'Owner sub 5':c.subtasks[4]?ownerName(c.subtasks[4].owner||c.owner):'',
       'Inizio sub 5':c.subtasks[4]?.start?c.subtasks[4].start.split('-').reverse().join('/'):'',
       'Scadenza sub 5':c.subtasks[4]?.due?c.subtasks[4].due.split('-').reverse().join('/'):'',
     }));
     const wb=XLSX.utils.book_new();
     const ws=XLSX.utils.json_to_sheet(rows);
     // Column widths
-    ws['!cols']=[{wch:28},{wch:14},{wch:13},{wch:12},{wch:30},{wch:13},{wch:13},{wch:14},{wch:28},...Array(15).fill({wch:13})];
+    ws['!cols']=[{wch:28},{wch:14},{wch:13},{wch:12},{wch:30},{wch:13},{wch:13},{wch:14},{wch:28},...Array(20).fill({wch:13})];
     XLSX.utils.book_append_sheet(wb,ws,'Progetti');
     const date=new Date().toISOString().slice(0,10);
     XLSX.writeFile(wb,`teamflow_${date}.xlsx`);
@@ -1179,10 +1184,17 @@ function importExcel(input){
         if(!title||title.startsWith('⚠'))continue;
 
         // Build subtasks from Excel (replace existing)
+        const cardOwnerId=ownerMap[String(row['Owner *']||'').trim()]||S.owners[0].id;
         const subs=[];
         for(let i=1;i<=5;i++){
           const txt=String(row[`Subtask ${i}`]||'').trim();
-          if(txt)subs.push({id:uid(),text:txt,done:false,start:fmtD(row[`Inizio sub ${i}`]),due:fmtD(row[`Scadenza sub ${i}`])});
+          if(!txt)continue;
+          const subOwnerName=String(row[`Owner sub ${i}`]||'').trim();
+          const subOwner=subOwnerName?(ownerMap[subOwnerName]||cardOwnerId):cardOwnerId;
+          subs.push({id:uid(),text:txt,done:false,
+            start:fmtD(row[`Inizio sub ${i}`]),
+            due:fmtD(row[`Scadenza sub ${i}`]),
+            owner:subOwner});
         }
 
         // Tags: pass as-is from Excel (free text, comma-separated)
@@ -1198,7 +1210,7 @@ function importExcel(input){
 
         const data={
           title,
-          col:colMap[String(row['Stato *']||row['Stato *']||'Da fare').trim()]||'todo',
+          col:colMap[String(row['Stato *']||row['Colonna *']||'Da fare').trim()]||colMap[String(row['Stato *']||'').trim()]||'todo',
           owner:ownerMap[String(row['Owner *']||'').trim()]||S.owners[0].id,
           start:fmtD(row['Data inizio']),
           due:fmtD(row['Scadenza']),
@@ -1207,7 +1219,17 @@ function importExcel(input){
           dependsOn:'',
           notes:[],
           priority:String(row['Priorita']||row['Priorità']||'').trim(),
-          ambito:[],
+          ambito:(()=>{
+            const raw=String(row['Ambito']||'').trim();
+            if(!raw)return[];
+            // Match against known AMBITI list (case-insensitive)
+            return raw.split(',').map(a=>a.trim()).filter(a=>{
+              return AMBITI.some(x=>x.toLowerCase()===a.toLowerCase());
+            }).map(a=>{
+              const match=AMBITI.find(x=>x.toLowerCase()===a.toLowerCase());
+              return match||a;
+            });
+          })(),
           ambitoExtra:String(row['Ambito extra']||'').trim(),
         };
 
