@@ -36,17 +36,17 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .stat-val{font-size:26px;font-weight:700;letter-spacing:-.5px}
 .board{display:flex;gap:10px;padding:14px 16px 24px;overflow-x:auto;align-items:flex-start;background:#F5F6F8;min-height:calc(100vh - 130px)}
 .col{width:calc((100vw - 160px)/5);min-width:180px;flex-shrink:0;background:#fff;border-radius:12px;border:1px solid #E0E0E0;display:flex;flex-direction:column;box-shadow:0 1px 4px rgba(0,0,0,.04)}
-.col-head{padding:10px 12px;display:flex;align-items:center;gap:7px;flex-shrink:0;border-radius:12px 12px 0 0}
+.col-head{padding:10px 12px;display:flex;align-items:center;gap:7px;flex-shrink:0;border-radius:12px 12px 0 0;border-top:3px solid transparent}
 .col-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
 .col-title{font-size:13px;font-weight:700;flex:1;letter-spacing:-.2px}
 .col-count{font-size:11px;color:#666;background:#F0F0F0;border:none;border-radius:100px;padding:2px 8px;font-weight:600}
 .col-body{padding:0 8px 8px;min-height:80px;background:#fff}
 .col-body.drag-over{background:rgba(83,74,183,.08);border-radius:8px;outline:2px dashed #AFA9EC;outline-offset:-4px}
-.card{background:#fff;border:1px solid #EBEBEB;border-radius:8px;padding:9px 10px;margin-bottom:6px;cursor:grab;transition:border-color .15s,box-shadow .15s;user-select:none;border-left:3px solid transparent}
+.card{background:#fff;border:1px solid #EBEBEB;border-radius:8px;padding:9px 10px;margin-bottom:6px;cursor:grab;transition:border-color .12s,box-shadow .12s;user-select:none;border-left:3px solid transparent}.card-compact{padding:7px 10px}
 .card:hover{border-color:#d0cfe8;box-shadow:0 2px 10px rgba(0,0,0,.08)}
 .card:active{cursor:grabbing}
 .card.dragging{opacity:.4;transform:scale(.96)}
-.card.done-card .card-title{color:#888;text-decoration:line-through}
+
 .card-top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:6px}
 .card-title{font-size:12px;font-weight:500;line-height:1.4;flex:1}
 .card-edit{width:22px;height:22px;border-radius:4px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#bbb;font-size:15px;flex-shrink:0;transition:all .12s;border:none;background:transparent}
@@ -65,14 +65,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .sub-fill{height:3px;border-radius:2px;background:var(--teal);transition:width .3s}
 .sub-meta{display:flex;align-items:center;justify-content:space-between}
 .sub-label{font-size:11px;color:#aaa}
-.expand-btn{font-size:11px;color:#aaa;cursor:pointer;display:flex;align-items:center;gap:2px;background:none;border:none;font-family:inherit;padding:0}
-.expand-btn:hover{color:#666}
-.subtasks-list{margin-top:6px;border-top:1px solid #f0efe9;padding-top:6px;display:none}
-.subtasks-list.open{display:block}
 .sub-item{display:flex;align-items:center;gap:6px;padding:3px 0;font-size:12px;color:#666}
 .sub-check{width:14px;height:14px;border:1.5px solid #ccc;border-radius:3px;flex-shrink:0;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:8px;background:#fff;transition:all .12s}
 .sub-check.done{background:var(--teal);border-color:var(--teal);color:#fff}
-.sub-item.done .sub-text{text-decoration:line-through;color:#bbb}
 .add-card-btn{margin:3px 8px 7px;padding:6px;border-radius:8px;border:1px dashed #ccc;font-size:11px;color:#aaa;cursor:pointer;display:flex;align-items:center;gap:5px;transition:all .12s;background:transparent;font-family:inherit;width:calc(100% - 16px)}
 .add-card-btn:hover{background:#fff;color:#666;border-color:#aaa}
 .gantt-wrap{padding:16px 20px 24px}
@@ -382,7 +377,7 @@ function buildBoard(total,done,overdue,inprog){
     ${COLS.map(col=>{
       const colCards=sortCardsByDue(visibleCards.filter(c=>c.col===col.id));
       return`<div class="col">
-        <div class="col-head"><div class="col-dot" style="background:${col.color}"></div><div class="col-title">${col.title}</div><div class="col-count">${colCards.length}</div></div>
+        <div class="col-head" style="border-top-color:${col.color}"><div class="col-dot" style="background:${col.color}"></div><div class="col-title">${col.title}</div><div class="col-count">${colCards.length}</div></div>
         <div class="col-body" id="col-${col.id}" data-col="${col.id}">${colCards.map(c=>buildCard(c)).join('')}</div>
         <button class="add-card-btn" onclick="openNew('${col.id}')">+ aggiungi</button>
       </div>`;
@@ -390,35 +385,52 @@ function buildBoard(total,done,overdue,inprog){
   </div>`;
 }
 
+function priIcon(p){return p==='High'?'\u25b2':p==='Medium'?'\u25cf':'\u25bc'}
+function priStyle(p){return p==='High'?'color:#D83A52;font-size:10px;font-weight:700':p==='Medium'?'color:#854F0B;font-size:10px':'color:#3B6D11;font-size:10px'}
+
 function buildCard(c){
-  const o=ownerById(c.owner),ratio=doneRatio(c.subtasks),od=isOverdue(c.due)&&c.col!=='done',exp=S.expanded[c.id];
-  const dep=c.dependsOn?cardById(c.dependsOn):null,depBlocked=dep&&dep.col!=='done';
-  const pct=ratio?Math.round(ratio.d/ratio.t*100):0;
-  const colColor=(COLS.find(x=>x.id===c.col)||{}).color||'#888';
-  return`<div class="card${c.col==='done'?' done-card':''}" data-id="${c.id}" draggable="true" style="border-left-color:${colColor}">
-    <div class="card-top"><div class="card-title">${c.title}</div><button class="card-edit" onclick="openEdit('${c.id}')">⋯</button></div>
-    ${c.tags.length?`<div class="tags">${c.tags.map(t=>{const tg=tagById(t);if(!tg)return'';const cs=tagCss(tg.color);return`<span class="tag" style="background:${cs.bg};color:${cs.text}">${tg.label}</span>`}).join('')}</div>`:''}
-    ${dep?`<div class="dep-badge${depBlocked?' blocked':''}" title="${dep.title}">⟶ ${dep.title.length>24?dep.title.slice(0,24)+'…':dep.title}</div>`:''}
-    ${c.notes&&c.notes.length?`<div style="font-size:11px;color:#888;margin-bottom:6px;display:flex;align-items:center;gap:4px"><svg width="12" height="12" viewBox="0 0 12 12" fill="none"><rect x="1" y="1" width="10" height="10" rx="2" stroke="currentColor" stroke-width="1.2"/><line x1="3" y1="4" x2="9" y2="4" stroke="currentColor" stroke-width="1"/><line x1="3" y1="6.5" x2="9" y2="6.5" stroke="currentColor" stroke-width="1"/><line x1="3" y1="9" x2="7" y2="9" stroke="currentColor" stroke-width="1"/></svg>${c.notes.length} ${c.notes.length===1?'nota':'note'}</div>`:''}
-    ${ratio!==null?`<div class="sub-bar"><div class="sub-track"><div class="sub-fill" style="width:${pct}%"></div></div>
-      <div class="sub-meta"><div class="sub-label">${ratio.d}/${ratio.t} subtask</div>
-        <button class="expand-btn" onclick="toggleExp('${c.id}')"><svg width="9" height="9" viewBox="0 0 9 9" style="transition:transform .2s;transform:rotate(${exp?90:0}deg)"><path d="M2.5 1.5l4 3-4 3" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>${exp?'nascondi':'mostra'}</button>
+  const colDef=COLS.find(x=>x.id===c.col)||{};
+  const colColor=colDef.color||'#888';
+  const o=ownerById(c.owner);
+  const od=isOverdue(c.due)&&c.col!=='done'&&c.col!=='dead';
+  const dep=c.dependsOn?cardById(c.dependsOn):null;
+  const depBlocked=dep&&dep.col!=='done'&&dep.col!=='dead';
+
+  // COMPACT view for Fatto and Dead
+  if(c.col==='done'||c.col==='dead'){
+    return`<div class="card card-compact" data-id="${c.id}" draggable="true" style="border-left-color:${colColor}">
+      <div style="display:flex;align-items:flex-start;gap:6px">
+        <div style="flex:1;font-size:12px;font-weight:500;color:${c.col==='dead'?'#bbb':'#666'};line-height:1.35">${c.title}</div>
+        <button class="card-edit" onclick="openEdit('${c.id}')">\u22ef</button>
       </div>
-      <div class="subtasks-list${exp?' open':''}">
-        ${c.subtasks.map(s=>`<div class="sub-item${s.done?' done':''}"><div class="sub-check${s.done?' done':''}" data-cid="${c.id}" data-sid="${s.id}">${s.done?'✓':''}</div><span class="sub-text">${s.text}</span></div>`).join('')}
-      </div></div>`:''}
-    ${c.ambito&&c.ambito.length?`<div style="display:flex;flex-wrap:wrap;gap:3px;margin-bottom:6px">${c.ambito.map(a=>`<span style="background:#F1EFE8;color:#5F5E5A;font-size:10px;padding:1px 6px;border-radius:100px;font-weight:500">${a}</span>`).join('')}</div>`:''}
+      ${c.tags.length?`<div class="tags" style="margin-top:4px">${c.tags.map(t=>{const tg=tagById(t);if(!tg)return'';const cs=tagCss(tg.color);return`<span class="tag" style="background:${cs.bg};color:${cs.text}">${tg.label}</span>`}).join('')}</div>`:''}
+    </div>`;
+  }
+
+  const ratio=doneRatio(c.subtasks);
+  const pct=ratio?Math.round(ratio.d/ratio.t*100):0;
+  return`<div class="card" data-id="${c.id}" draggable="true" style="border-left-color:${colColor}">
+    <div class="card-top">
+      <div class="card-title">${c.title}</div>
+      <div style="display:flex;align-items:center;gap:4px;flex-shrink:0">
+        ${c.priority?`<span style="${priStyle(c.priority)}" title="${c.priority}">${priIcon(c.priority)}</span>`:''}
+        <button class="card-edit" onclick="openEdit('${c.id}')">\u22ef</button>
+      </div>
+    </div>
+    ${c.tags.length?`<div class="tags">${c.tags.map(t=>{const tg=tagById(t);if(!tg)return'';const cs=tagCss(tg.color);return`<span class="tag" style="background:${cs.bg};color:${cs.text}">${tg.label}</span>`}).join('')}</div>`:''}
+    ${dep?`<div class="dep-badge${depBlocked?' blocked':''}" title="${dep.title}">\u27b6 ${dep.title.length>22?dep.title.slice(0,22)+'\u2026':dep.title}</div>`:''}
+    ${c.notes&&c.notes.length?`<div style="font-size:10px;color:#aaa;margin-bottom:4px">&#128221; ${c.notes.length} ${c.notes.length===1?'nota':'note'}</div>`:''}
+    ${ratio!==null?`<div class="sub-bar"><div style="display:flex;align-items:center;gap:6px"><div class="sub-track" style="flex:1"><div class="sub-fill" style="width:${pct}%"></div></div><div class="sub-label">${ratio.d}/${ratio.t}</div></div></div>`:''}
+    ${c.ambito&&c.ambito.length?`<div style="display:flex;flex-wrap:wrap;gap:2px;margin-bottom:5px">${c.ambito.slice(0,3).map(a=>`<span style="background:#F1EFE8;color:#5F5E5A;font-size:10px;padding:1px 5px;border-radius:100px">${a}</span>`).join('')}${c.ambito.length>3?`<span style="font-size:10px;color:#aaa">+${c.ambito.length-3}</span>`:''}</div>`:''}
     <div class="card-footer">
-      <div class="owner-chip"><div class="mini-av" style="background:${o.bg};color:${o.color}">${o.initials}</div>${o.name}</div>
-      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:3px">
-        ${c.priority?`<span style="font-size:10px;font-weight:600;padding:1px 7px;border-radius:100px;${c.priority==='High'?'background:#FCEBEB;color:#A32D2D':c.priority==='Medium'?'background:#FAEEDA;color:#854F0B':'background:#EAF3DE;color:#3B6D11'}">${c.priority}</span>`:''}
-        ${c.start?`<div style="font-size:10px;color:#aaa">▶ ${fmt(c.start)}</div>`:''}
-        ${c.due?`<div class="date-chip${od?' date-overdue':''}">${od?'▲ ':''}${fmt(c.due)}</div>`:''}
+      <div class="mini-av" title="${o.name}" style="background:${o.bg};color:${o.color};cursor:default">${o.initials}</div>
+      <div style="display:flex;align-items:center;gap:5px">
+        ${c.start?`<div style="font-size:10px;color:#bbb">&#9654; ${fmt(c.start)}</div>`:''}
+        ${c.due?`<div class="date-chip${od?' date-overdue':''}">${od?'&#9650; ':''}${fmt(c.due)}</div>`:''}
       </div>
     </div>
   </div>`;
 }
-
 function buildDashboard(){
   if(S.loading)return`<div class="loading"><div class="spinner"></div> Carico...</div>`;
   const today=new Date(new Date().toDateString());
@@ -552,8 +564,8 @@ function buildGantt(){
   const rs=S.ganttStart||todayStr(),re=S.ganttEnd||addDays(todayStr(),30);
   const totalDays=diffDays(rs,re)+1;
   // Responsive: fit all days into ~760px track width, min 4px, max 36px
-  // Calcola larghezza disponibile: viewport - label col (230) - padding (40)
-  const availW=Math.max(400,(typeof window!=='undefined'?window.innerWidth:1200)-230-40);
+  // Use stored container width if available, fallback to viewport estimate
+  const availW=Math.max(300,(window._ganttW||window.innerWidth)-230-40);
   const DAY_W=Math.max(3,Math.min(36,Math.floor(availW/totalDays)));
   const W=totalDays*DAY_W;
   // For dense views (DAY_W < 10), only show month markers not individual days
@@ -918,7 +930,16 @@ function bindEvents(){
   bind('gantt-3m','click',()=>{S.ganttStart=todayStr();S.ganttEnd=addDays(todayStr(),90);render()});
   bind('gantt-6m','click',()=>{S.ganttStart=todayStr();S.ganttEnd=addDays(todayStr(),180);render()});
   bind('gantt-1y','click',()=>{S.ganttStart=todayStr();S.ganttEnd=addDays(todayStr(),365);render()});
-  bind('gantt-fit','click',()=>render()); // force re-render with current viewport width
+  bind('gantt-fit','click',()=>{
+    const cont=document.querySelector('.gantt-container');
+    if(cont)window._ganttW=cont.getBoundingClientRect().width+230;
+    render();
+  });
+  // Also auto-measure on first render
+  setTimeout(()=>{
+    const cont=document.querySelector('.gantt-container');
+    if(cont&&!window._ganttW){window._ganttW=cont.getBoundingClientRect().width+230;render();}
+  },100);
   // Dashboard date controls
   const dsi=document.getElementById('dash-start-input');
   if(dsi)dsi.addEventListener('change',()=>{S.dashStart=dsi.value;render()});
