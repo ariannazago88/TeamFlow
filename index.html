@@ -183,7 +183,7 @@ function apiHeaders(){const c=getCfg();return{'Authorization':`Bearer ${c.token}
 
 const DEFAULT_AMBITI=['Listino','SalesKit','Contract Docs','Formazione Interna','Product Definition/Description','Analisi/Ricerca','Articoli/Blog','Evento/Webinar','Campagne','Website','LoB/Cod. Art.','Comunicazione Interna'];
 let AMBITI=[...DEFAULT_AMBITI];
-let S={cards:[],owners:[...DEFAULT_OWNERS],loading:true,error:null,modal:null,expanded:{},ganttExp:{},view:'board',draft:null,ganttStart:'',ganttEnd:'',ownerFilter:null,tagFilter:null,searchQ:'',dashStart:'',dashEnd:''};
+let S={cards:[],owners:[...DEFAULT_OWNERS],loading:true,error:null,modal:null,expanded:{},ganttExp:{},view:'board',draft:null,ganttStart:'',ganttEnd:'',ownerFilter:null,tagFilter:null,searchQ:'',dashStart:'',dashEnd:'',dashMode:'card'};
 let dragSrcId=null;
 
 function uid(){return 'x'+Math.random().toString(36).slice(2,9)}
@@ -422,7 +422,7 @@ function buildCard(c){
     ${dep?`<div class="dep-badge${depBlocked?' blocked':''}" title="${dep.title}">\u27b6 ${dep.title.length>22?dep.title.slice(0,22)+'\u2026':dep.title}</div>`:''}
     ${c.notes&&c.notes.length?`<div style="font-size:10px;color:#aaa;margin-bottom:4px">&#128221; ${c.notes.length} ${c.notes.length===1?'nota':'note'}</div>`:''}
     ${ratio!==null?`<div class="sub-bar"><div style="display:flex;align-items:center;gap:6px"><div class="sub-track" style="flex:1"><div class="sub-fill" style="width:${pct}%"></div></div><div class="sub-label">${ratio.d}/${ratio.t}</div></div></div>`:''}
-    ${c.ambito&&c.ambito.length?`<div style="display:flex;flex-wrap:wrap;gap:2px;margin-bottom:5px">${c.ambito.slice(0,3).map(a=>`<span style="background:#F1EFE8;color:#5F5E5A;font-size:10px;padding:1px 5px;border-radius:100px">${a}</span>`).join('')}${c.ambito.length>3?`<span style="font-size:10px;color:#aaa">+${c.ambito.length-3}</span>`:''}</div>`:''}
+
     <div class="card-footer">
       <div class="mini-av" title="${o.name}" style="background:${o.bg};color:${o.color};cursor:default">${o.initials}</div>
       <div style="display:flex;align-items:center;gap:5px">
@@ -541,6 +541,80 @@ function buildDashboard(){
     </div>`;
   }
 
+  // Modalità Task: aggrega subtask per owner assegnato
+  function taskStats(ownerIdFilter){
+    // Raccoglie tutte le "attività": card + subtask con owner
+    const cardItems=S.cards.filter(inPeriod).map(c=>({type:'card',col:c.col,owner:c.owner,due:c.due,priority:c.priority,tags:c.tags,done:c.col==='done'}));
+    const subItems=S.cards.filter(inPeriod).flatMap(c=>(c.subtasks||[]).map(s=>({type:'sub',col:c.col,owner:s.owner||c.owner,due:s.due||c.due,priority:c.priority,tags:c.tags,done:s.done,cardTitle:c.title,text:s.text})));
+    const items=[...cardItems,...subItems].filter(x=>!ownerIdFilter||x.owner===ownerIdFilter);
+    const total=items.length;
+    const done=items.filter(x=>x.done).length;
+    const pct=total?Math.round(done/total*100):0;
+    const overdue=items.filter(x=>!x.done&&x.due&&new Date(x.due)<today).length;
+    const byType={card:cardItems.filter(x=>!ownerIdFilter||x.owner===ownerIdFilter).length,sub:subItems.filter(x=>!ownerIdFilter||x.owner===ownerIdFilter).length};
+    const byPri={High:0,Medium:0,Low:0};
+    items.forEach(x=>{if(x.priority==='High')byPri.High++;else if(x.priority==='Medium')byPri.Medium++;else if(x.priority==='Low')byPri.Low++;});
+    const upcoming=items.filter(x=>!x.done&&x.due&&new Date(x.due)>=today).sort((a,b)=>new Date(a.due)-new Date(b.due)).slice(0,5);
+    return{total,done,pct,overdue,byType,byPri,upcoming};
+  }
+
+  function taskPanel(title,ownerIdFilter,color){
+    const s=taskStats(ownerIdFilter);
+    return`<div style="background:#fff;border:1px solid #e2e0d8;border-radius:12px;padding:20px;break-inside:avoid">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid #f0efe9">
+        <div style="width:10px;height:10px;border-radius:50%;background:${color}"></div>
+        <div style="font-size:15px;font-weight:600">${title}</div>
+        <div style="margin-left:auto;font-size:12px;color:#888">${s.total} attività totali</div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px">
+        <div style="background:#F7F6F2;border-radius:8px;padding:10px 12px">
+          <div style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Completamento</div>
+          <div style="font-size:22px;font-weight:600;color:${s.pct>=75?'#0F6E56':s.pct>=40?'#854F0B':'#1a1a1a'}">${s.pct}%</div>
+          <div style="height:4px;background:#e2e0d8;border-radius:2px;margin-top:6px"><div style="height:4px;background:${s.pct>=75?'#0F6E56':s.pct>=40?'#EF9F27':'#534AB7'};border-radius:2px;width:${s.pct}%"></div></div>
+        </div>
+        <div style="background:#F7F6F2;border-radius:8px;padding:10px 12px">
+          <div style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Fatto / Totale</div>
+          <div style="font-size:22px;font-weight:600">${s.done}<span style="font-size:13px;color:#888;font-weight:400"> / ${s.total}</span></div>
+        </div>
+        <div style="background:${s.overdue?'#FCEBEB':'#F7F6F2'};border-radius:8px;padding:10px 12px">
+          <div style="font-size:10px;color:${s.overdue?'#A32D2D':'#888'};text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Scadute</div>
+          <div style="font-size:22px;font-weight:600;color:${s.overdue?'#A32D2D':'#1a1a1a'}">${s.overdue}</div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px">
+        <div>
+          <div style="font-size:11px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Card vs Subtask</div>
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:5px">
+            <div style="width:8px;height:8px;border-radius:50%;background:#534AB7;flex-shrink:0"></div>
+            <div style="font-size:12px;color:#555;flex:1">Card</div>
+            <div style="font-size:12px;font-weight:600">${s.byType.card}</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:5px">
+            <div style="width:8px;height:8px;border-radius:50%;background:#0F6E56;flex-shrink:0"></div>
+            <div style="font-size:12px;color:#555;flex:1">Subtask</div>
+            <div style="font-size:12px;font-weight:600">${s.byType.sub}</div>
+          </div>
+        </div>
+        <div>
+          <div style="font-size:11px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Priorità</div>
+          ${[['High','#A32D2D','#FCEBEB'],['Medium','#854F0B','#FAEEDA'],['Low','#3B6D11','#EAF3DE']].map(([p,c,bg])=>s.byPri[p]?`<div style="display:flex;align-items:center;gap:8px;margin-bottom:5px">
+            <span style="background:${bg};color:${c};font-size:10px;font-weight:600;padding:1px 7px;border-radius:100px">${p}</span>
+            <div style="flex:1;height:4px;background:#f0efe9;border-radius:2px"><div style="height:4px;background:${c};border-radius:2px;width:${s.total?Math.round(s.byPri[p]/s.total*100):0}%"></div></div>
+            <div style="font-size:12px;font-weight:600">${s.byPri[p]}</div>
+          </div>`:'').join('')}
+        </div>
+      </div>
+      ${s.upcoming.length?`<div>
+        <div style="font-size:11px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Prossime scadenze</div>
+        ${s.upcoming.map(x=>`<div style="display:flex;align-items:center;gap:8px;padding:4px 0;border-bottom:1px solid #f5f4f0">
+          <div style="font-size:11px;color:#aaa;flex-shrink:0">${x.type==='sub'?'↳':''}</div>
+          <div style="font-size:12px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${x.type==='sub'?x.text:x.cardTitle||''}</div>
+          <div style="font-size:11px;color:#888;flex-shrink:0">${fmt(x.due)}</div>
+        </div>`).join('')}
+      </div>`:''}
+    </div>`;
+  }
+
   return`<div id="dashboard-content" style="padding:20px;display:flex;flex-direction:column;gap:20px">
     <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
       <div style="font-size:18px;font-weight:600">Dashboard — Stato delle attività</div>
@@ -551,11 +625,20 @@ function buildDashboard(){
         <input type="date" id="dash-end-input" value="${de||''}" style="padding:5px 8px;border:1px solid #e2e0d8;border-radius:7px;font-size:12px;font-family:inherit;background:#fff;color:#1a1a1a">
         ${ds||de?`<button id="dash-clear-btn" class="btn btn-sm">✕ tutto il periodo</button>`:''}
         ${ds||de?`<span style="font-size:12px;color:#534AB7;font-weight:500">${all.length} card nel periodo</span>`:''}
+        <div style="display:flex;border:1px solid #e2e0d8;border-radius:8px;overflow:hidden;margin-left:8px">
+          <button onclick="S.dashMode='card';render()" style="padding:5px 12px;font-size:12px;font-weight:500;border:none;cursor:pointer;font-family:inherit;background:${S.dashMode==='card'?'#534AB7':'#fff'};color:${S.dashMode==='card'?'#fff':'#888'}">Card</button>
+          <button onclick="S.dashMode='task';render()" style="padding:5px 12px;font-size:12px;font-weight:500;border:none;cursor:pointer;font-family:inherit;background:${S.dashMode==='task'?'#534AB7':'#fff'};color:${S.dashMode==='task'?'#fff':'#888'}">Task</button>
+        </div>
       </div>
     </div>
-    ${panel('Team completo',all,'#534AB7')}
+    ${S.dashMode==='task'
+      ? taskPanel('Team completo',null,'#534AB7')
+      : panel('Team completo',all,'#534AB7')}
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:16px">
-      ${S.owners.map(o=>panel(o.name,all.filter(c=>c.owner===o.id),o.color)).join('')}
+      ${S.owners.map(o=>S.dashMode==='task'
+        ? taskPanel(o.name,o.id,o.color)
+        : panel(o.name,all.filter(c=>c.owner===o.id),o.color)
+      ).join('')}
     </div>
   </div>`;
 }
@@ -700,12 +783,19 @@ function buildModal(){
       ${(d.ambitoExtra||'').trim()?`<div style="margin-top:6px;font-size:11px;color:#888">Voci personalizzate: ${d.ambitoExtra.split(',').filter(Boolean).map(a=>`<span style="background:#F1EFE8;color:#5F5E5A;padding:1px 6px;border-radius:100px;margin-right:3px">${a.trim()}</span>`).join('')}</div>`:'' }
     </div>
     <div class="form-group"><label class="form-label">Subtask</label>
-      ${d.subtasks.map(s=>`<div class="modal-sub-item">
+      ${d.subtasks.map(s=>{const so=ownerById(s.owner||d.owner);return`<div class="modal-sub-item">
         <div class="modal-sub-check${s.done?' done':''}" data-sid="${s.id}">${s.done?'✓':''}</div>
         <span class="modal-sub-text">${s.text}</span>
-        <div class="modal-sub-dates"><input type="date" class="ssi" data-sid="${s.id}" value="${s.start||''}" title="Inizio"><span style="font-size:10px;color:#bbb">→</span><input type="date" class="sdi" data-sid="${s.id}" value="${s.due||''}" title="Fine"></div>
+        <div class="modal-sub-dates">
+          <input type="date" class="ssi" data-sid="${s.id}" value="${s.start||''}" title="Inizio">
+          <span style="font-size:10px;color:#bbb">→</span>
+          <input type="date" class="sdi" data-sid="${s.id}" value="${s.due||''}" title="Fine">
+          <select class="soi" data-sid="${s.id}" title="Owner subtask" style="padding:2px 4px;border:1px solid #ddd;border-radius:5px;font-size:11px;font-family:inherit;color:#555;background:#fff;cursor:pointer">
+            ${S.owners.map(o=>`<option value="${o.id}"${(s.owner||d.owner)===o.id?' selected':''}>${o.initials}</option>`).join('')}
+          </select>
+        </div>
         <button class="modal-sub-del" data-delsub="${s.id}">✕</button>
-      </div>`).join('')}
+      </div>`;}).join('')}
       <div class="sub-input-row"><input id="sub-input" type="text" placeholder="Aggiungi subtask..."><button id="sub-add-btn">+</button></div>
     </div>
     <div class="form-group">
@@ -862,7 +952,7 @@ function bindEvents(){
     // Add as subtask if not already present
     const exists=S.draft.subtasks.some(s=>s._ambitoExtra===voce);
     if(!exists){
-      S.draft.subtasks=[...S.draft.subtasks,{id:uid(),text:voce,done:false,start:'',due:'',_ambitoExtra:voce}];
+      S.draft.subtasks=[...S.draft.subtasks,{id:uid(),text:voce,done:false,start:'',due:'',_ambitoExtra:voce,owner:S.draft.owner||S.owners[0].id}];
     }
     // Append to ambitoExtra string (comma-separated)
     const current=(S.draft.ambitoExtra||'').split(',').map(s=>s.trim()).filter(Boolean);
@@ -879,7 +969,7 @@ function bindEvents(){
         // Add subtask only if not already present (by ambito tag)
         const exists=S.draft.subtasks.some(s=>s._ambito===voce);
         if(!exists){
-          S.draft.subtasks=[...S.draft.subtasks,{id:uid(),text:voce,done:false,start:'',due:'',_ambito:voce}];
+          S.draft.subtasks=[...S.draft.subtasks,{id:uid(),text:voce,done:false,start:'',due:'',_ambito:voce,owner:S.draft.owner||S.owners[0].id}];
         }
         if(!S.draft.ambito)S.draft.ambito=[];
         if(!S.draft.ambito.includes(voce))S.draft.ambito=[...S.draft.ambito,voce];
@@ -897,6 +987,7 @@ function bindEvents(){
   });
   document.querySelectorAll('.ssi').forEach(el=>{el.addEventListener('change',()=>{const sub=S.draft.subtasks.find(s=>s.id===el.dataset.sid);if(sub)sub.start=el.value})});
   document.querySelectorAll('.sdi').forEach(el=>{el.addEventListener('change',()=>{const sub=S.draft.subtasks.find(s=>s.id===el.dataset.sid);if(sub)sub.due=el.value})});
+  document.querySelectorAll('.soi').forEach(el=>{el.addEventListener('change',()=>{const sub=S.draft.subtasks.find(s=>s.id===el.dataset.sid);if(sub)sub.owner=el.value})});
   bind('save-cfg-btn','click',async()=>{
     const token=document.getElementById('cfg-token')?.value.trim();
     const baseId=document.getElementById('cfg-base')?.value.trim();
@@ -952,7 +1043,7 @@ function bindEvents(){
 function addSubtask(){
   const inp=document.getElementById('sub-input'),txt=inp?.value.trim();
   if(!txt)return;
-  S.draft.subtasks=[...S.draft.subtasks,{id:uid(),text:txt,done:false,start:'',due:''}];
+  S.draft.subtasks=[...S.draft.subtasks,{id:uid(),text:txt,done:false,start:'',due:'',owner:S.draft.owner||S.owners[0].id}];
   render();setTimeout(()=>{const i=document.getElementById('sub-input');if(i)i.focus()},50);
 }
 
@@ -961,6 +1052,7 @@ async function handleSave(){
   if(!title){toast('Inserisci un titolo');return;}
   document.querySelectorAll('.ssi').forEach(el=>{const sub=S.draft.subtasks.find(s=>s.id===el.dataset.sid);if(sub)sub.start=el.value});
   document.querySelectorAll('.sdi').forEach(el=>{const sub=S.draft.subtasks.find(s=>s.id===el.dataset.sid);if(sub)sub.due=el.value});
+  document.querySelectorAll('.soi').forEach(el=>{const sub=S.draft.subtasks.find(s=>s.id===el.dataset.sid);if(sub)sub.owner=el.value});
   S.draft.title=title;
   S.draft.col=document.getElementById('f-col')?.value||S.draft.col;
   S.draft.owner=document.getElementById('f-owner')?.value||S.draft.owner;
