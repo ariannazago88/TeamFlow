@@ -1201,7 +1201,41 @@ function downloadPng(elId,filename){
   s.onload=load;document.head.appendChild(s);
 }
 
-function downloadGanttPng(){downloadPng('gantt-export','gantt_teamflow')}
+function downloadGanttPng(){
+  const load=()=>{
+    const wrap=document.getElementById('gantt-export');
+    if(!wrap){toast('Gantt non trovato');return;}
+    // Temporarily remove scroll constraint so html2canvas captures everything
+    const cont=wrap.querySelector('.gantt-container');
+    const prevMaxH=cont?cont.style.maxHeight:'';
+    const prevOverflow=cont?cont.style.overflow:'';
+    const prevH=cont?cont.style.height:'';
+    if(cont){cont.style.maxHeight='none';cont.style.overflow='visible';cont.style.height='auto';}
+    // Also unscroll
+    const prevScrollTop=cont?cont.scrollTop:0;
+    if(cont)cont.scrollTop=0;
+    toast('Preparazione PNG...');
+    setTimeout(()=>{
+      window.html2canvas(wrap,{backgroundColor:'#fff',scale:2,useCORS:true,logging:false,
+        height:wrap.scrollHeight,windowHeight:wrap.scrollHeight+200}).then(canvas=>{
+        // Restore
+        if(cont){cont.style.maxHeight=prevMaxH;cont.style.overflow=prevOverflow;cont.style.height=prevH;cont.scrollTop=prevScrollTop;}
+        const a=document.createElement('a');
+        a.download='gantt_teamflow_'+todayStr()+'.png';
+        a.href=canvas.toDataURL('image/png');
+        a.click();
+        toast('PNG scaricato ✓');
+      }).catch(e=>{
+        if(cont){cont.style.maxHeight=prevMaxH;cont.style.overflow=prevOverflow;cont.style.height=prevH;}
+        toast('Errore: '+e.message);
+      });
+    },80);
+  };
+  if(window.html2canvas){load();return;}
+  const s=document.createElement('script');
+  s.src='https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
+  s.onload=load;document.head.appendChild(s);
+}
 function downloadDashboardPng(){downloadPng('dashboard-content','dashboard_teamflow')}
 
 async function boot(){await fetchSettings();await fetchCards()}
