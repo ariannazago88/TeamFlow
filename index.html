@@ -163,17 +163,19 @@ const COLS=[
 ];
 const GANTT_COLS=['todo','doing','urgent','blocked','done']; // dead excluded from gantt
 const DEFAULT_TAGS=[
-  {id:'design', label:'design',    color:'#7F77DD'},
-  {id:'dev',    label:'dev',       color:'#378ADD'},
-  {id:'mkt',    label:'marketing', color:'#EF9F27'},
-  {id:'ops',    label:'ops',       color:'#1D9E75'},
-  {id:'urgent', label:'urgente',   color:'#E24B4A'},
+  {id:'ops',      label:'Offering',   color:'#185FA5'},
+  {id:'dev',      label:'VAR',        color:'#0F6E56'},
+  {id:'design',   label:'EMC',        color:'#A32D2D'},
+  {id:'mkt',      label:'Marketing',  color:'#854F0B'},
+  {id:'urgent',   label:'7C',         color:'#534AB7'},
+  {id:'xm94m1p8', label:'Circle PDT', color:'#D83A52'},
+  {id:'lab',      label:'LAB',        color:'#5A8A3C'},
 ];
 let TAGS=[...DEFAULT_TAGS];
 const DEFAULT_OWNERS=[
-  {id:'owner1',name:'Tu',   initials:'TU',color:'#534AB7',bg:'#EEEDFE'},
-  {id:'owner2',name:'Anna', initials:'AN',color:'#185FA5',bg:'#E6F1FB'},
-  {id:'owner3',name:'Beppe',initials:'BE',color:'#0F6E56',bg:'#E1F5EE'},
+  {id:'owner1',name:'Arianna', initials:'AZ',color:'#534AB7',bg:'#EEEDFE'},
+  {id:'owner2',name:'Luca',    initials:'LM',color:'#185FA5',bg:'#E6F1FB'},
+  {id:'owner3',name:'Lorenzo', initials:'LP',color:'#0F6E56',bg:'#E1F5EE'},
 ];
 
 function getCfg(){try{return JSON.parse(localStorage.getItem('tf_cfg')||'{}')}catch{return{}}}
