@@ -35,7 +35,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .stat-label{font-size:11px;color:#888;margin-bottom:4px;text-transform:uppercase;letter-spacing:.06em;font-weight:600}
 .stat-val{font-size:26px;font-weight:700;letter-spacing:-.5px}
 .board{display:flex;gap:12px;padding:14px 16px 24px;overflow-x:auto;align-items:flex-start;background:#E8E9EE;min-height:calc(100vh - 130px)}
-.col{width:calc((100vw - 160px)/5);min-width:180px;flex-shrink:0;border-radius:12px;border:none;display:flex;flex-direction:column}
+.col{width:calc((100vw - 160px)/6);min-width:180px;flex-shrink:0;border-radius:12px;border:none;display:flex;flex-direction:column}
 .col-head{padding:10px 12px 8px;display:flex;align-items:center;gap:7px;flex-shrink:0;border-radius:12px 12px 0 0}
 .col-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
 .col-title{font-size:13px;font-weight:700;flex:1;letter-spacing:-.2px}
@@ -156,11 +156,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 const COLS=[
   {id:'todo',   title:'Da fare',  color:'#888780'},
   {id:'doing',  title:'In corso', color:'#185FA5'},
-  {id:'blocked',title:'Bloccate', color:'#A32D2D'},
+  {id:'urgent', title:'Urgente',  color:'#D83A52'},
+  {id:'blocked',title:'Bloccate', color:'#8B2020'},
   {id:'done',   title:'Fatto',    color:'#0F6E56'},
   {id:'dead',   title:'Dead',     color:'#444441'},
 ];
-const GANTT_COLS=['todo','doing','blocked','done']; // dead excluded from gantt
+const GANTT_COLS=['todo','doing','urgent','blocked','done']; // dead excluded from gantt
 const DEFAULT_TAGS=[
   {id:'design', label:'design',    color:'#7F77DD'},
   {id:'dev',    label:'dev',       color:'#378ADD'},
@@ -302,6 +303,11 @@ async function fetchSettings(){
 
 async function pushSettings(){
   if(!isConfigured())return;
+  // Protezione: non sovrascrivere se owners sono ancora i default (nuovo utente senza localStorage)
+  const isDefaultOwners=S.owners.every((o,i)=>DEFAULT_OWNERS[i]&&o.name===DEFAULT_OWNERS[i].name);
+  if(isDefaultOwners&&S.owners.length===DEFAULT_OWNERS.length){
+    toast('⚠ Configura prima i nomi del team in Impostazioni');return;
+  }
   try{
     const r=await fetch(apiBase('Settings'),{headers:apiHeaders()});
     const existing=r.ok?(await r.json()).records:[];
@@ -376,7 +382,7 @@ function buildBoard(total,done,overdue,inprog){
   return filterBanner+tagBanner+tagLegend+`<div class="board" id="board">
     ${COLS.map(col=>{
       const colCards=sortCardsByDue(visibleCards.filter(c=>c.col===col.id));
-      const colBg={'todo':'#F0EFEA','doing':'#E8F2FF','blocked':'#FFF0F0','done':'#E0F5EC','dead':'#EBEBEA'};
+      const colBg={'todo':'#F0EFEA','doing':'#E8F2FF','urgent':'#FFF0F3','blocked':'#FFF0F0','done':'#E0F5EC','dead':'#EBEBEA'};
       return`<div class="col" style="background:${colBg[col.id]||'#F5F5F5'}">
         <div class="col-head"><div class="col-dot" style="background:${col.color}"></div><div class="col-title">${col.title}</div><div class="col-count">${colCards.length}</div></div>
         <div class="col-body" id="col-${col.id}" data-col="${col.id}">${colCards.map(c=>buildCard(c)).join('')}</div>
@@ -916,6 +922,9 @@ function bindEvents(){
   bind('del-btn','click',async()=>{if(confirm('Eliminare questa card?'))await deleteCard(S.modal.id)});
   bind('sub-add-btn','click',addSubtask);
   bind('sub-input','keydown',e=>{if(e.key==='Enter')addSubtask()});
+  // Live sync title from modal input to S.draft (prevents render() from resetting it)
+  const titleEl=document.getElementById('f-title');
+  if(titleEl)titleEl.addEventListener('input',()=>{if(S.draft)S.draft.title=titleEl.value});
   // Search with debounce so typing is fluid
   let _searchTimer=null;
   const searchEl=document.getElementById('search-input');
@@ -1164,7 +1173,7 @@ function importExcel(input){
         .filter(r=>r.some(c=>c!==null&&c!==undefined&&c!==''))
         .map(r=>Object.fromEntries(headers.map((h,i)=>[h,r[i]??''])));
 
-      const colMap={'Da fare':'todo','In corso':'doing','Bloccate':'blocked','Fatto':'done'};
+      const colMap={'Da fare':'todo','In corso':'doing','Urgente':'urgent','Bloccate':'blocked','Fatto':'done','Dead':'dead'};
       const ownerMap={};S.owners.forEach(o=>ownerMap[o.name]=o.id);
       const fmtD=v=>{
         if(!v)return'';
